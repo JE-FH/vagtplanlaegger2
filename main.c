@@ -35,16 +35,16 @@ struct Worker {
 struct BlockSchedule {
 	struct Worker* workers;
 	unsigned int tries;
-}
+};
 
 struct DaySchedule {
-	struct BlockSchedule[3];
-}
+	struct BlockSchedule blocks[3];
+};
 
 struct Schedule {
-	struct DaySchedule[7];
-}
+	struct DaySchedule days[7];
+};
 
 int main(int argc, char** argv) {
-	
+	return 0;
 }
