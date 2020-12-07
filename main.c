@@ -36,6 +36,7 @@ typedef struct Worker {
 	enum Shift desired_shift;
 	unsigned int last_shift; 
 	unsigned int consecutive_night_shifts;
+	bool day_off;
 	unsigned int uuid;
 } Worker;
 
@@ -91,7 +92,7 @@ void generate_random_schedule( Worker* workers[], const size_t worker_count, con
  * @param[in] required_workers mængden af medarbejdere der er brug for
  * @returns en værdi som siger hvor god planen er, nu højere nu bedre
  */
-double evaluate_schedule(Schedule* schedule, const  RequiredWorkers required_workers, const Worker* worker, unsigned int amount_of_workers);
+double evaluate_schedule(Schedule* schedule, const  RequiredWorkers required_workers, Worker* worker, unsigned int amount_of_workers);
 
 
 /**
@@ -134,7 +135,7 @@ enum Day string_to_day(char* input);
 
 unsigned int get_required_workers( RequiredWorkers required_workers, enum Shift shift);
 
-void evaluate_schedule_preferred_day_off(Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers)
+void evaluate_schedule_preferred_day_off(Schedule* schedule, Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers, unsigned int i);
 
 int compare_schedule(const void* a, const void* b);
 
@@ -295,11 +296,11 @@ int random_number(int min, int max) {
 	return (int) round(min + (((double)rand()) / RAND_MAX) * (max - min));
 }
 
-double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_workers, const Worker* worker, unsigned int amount_of_workers) {
+double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_workers, Worker* worker, unsigned int amount_of_workers){
 	size_t i, j, k, m;
 
 	for (i = 0; i < 7 ; i++){
-		Worker assigned_workers[amount_of_workers];
+		Worker* assigned_workers = calloc(amount_of_workers,sizeof(Worker));
 		unsigned int amount_assigned_workers = 0;
 		
 		for (j = 0; j < 3; j++){
@@ -350,6 +351,11 @@ double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_wor
 				else{
 					current_worker.consecutive_night_shifts = 0;
 				}
+
+				/* Tjekker fridøgn */
+				if (block_number - current_worker.last_shift >= 5){
+					current_worker.day_off = 1;
+				}
 				/* Sætter last shift*/
 				current_worker.last_shift = block_number;
 			}
@@ -357,7 +363,9 @@ double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_wor
 
 		evaluate_schedule_required_workers(schedule, required_workers, block_number, j);
 		}
-	evaluate_schedule_preferred_day_off(worker, m, amount_assigned_workers, assigned_workers, amount_of_workers);
+		/* Tjekker pref day off og fridøgn*/
+	evaluate_schedule_preferred_day_off(schedule, worker, m, amount_assigned_workers, assigned_workers, amount_of_workers, i);
+	free(assigned_workers);
 	}
 
 return schedule->score;
@@ -385,7 +393,7 @@ void evaluate_schedule_required_workers( Schedule* schedule, const RequiredWorke
 			}
 }
 
-void evaluate_schedule_preferred_day_off(Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers){
+void evaluate_schedule_preferred_day_off(Schedule* schedule, Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers, unsigned int i){
 	int l;
 	for (l = 0; l < amount_of_workers; l++){
 			if (worker[l].desired_day_off == i){
@@ -395,10 +403,16 @@ void evaluate_schedule_preferred_day_off(Worker* worker, size_t m, size_t amount
 						day_off_bool = 0;
 						break;
 					}
-			}
+				}
+			
 			if (day_off_bool == 1){
 				 schedule->score += 2;
 			}
+			}
+		if (worker[l].day_off != 1){
+			schedule->score -= 1000;
+		}
+	}
 }
 
 
