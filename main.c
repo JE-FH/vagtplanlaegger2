@@ -25,32 +25,36 @@ enum Shift {
 	SHIFT_INVALID
 };
 
-struct Block {
+typedef struct Block {
 	enum Day day;
 	enum Shift shift;
-};
+} Block;
 
-struct Worker {
+typedef struct Worker {
 	char name[MAX_NAME_LENGTH + 1];
 	enum Day desired_day_off;
 	enum Shift desired_shift;
+	unsigned int last_shift; 
+	unsigned int consecutive_night_shifts;
+	bool day_off;
 	unsigned int uuid;
-};
+} Worker;
 
-struct BlockSchedule {
-	struct Worker** workers;
-};
+typedef struct BlockSchedule {
+	 Worker** workers;
+} BlockSchedule;
 
-struct Schedule {
-	struct BlockSchedule blocks[21];
+typedef struct Schedule {
+	BlockSchedule blocks[21];
+	int workers[21];
 	double score;
-};
+} Schedule;
 
-struct RequiredWorkers {
+typedef struct RequiredWorkers {
 	unsigned int night_workers;
 	unsigned int day_workers;
 	unsigned int evening_workers;
-};
+} RequiredWorkers;
 
 /**
  * Laver et schema til antallet af mearbejdere
@@ -59,7 +63,7 @@ struct RequiredWorkers {
  * @param[in] required_workers en required workers struktur
  * @returns et skema over hvem der skal arbejde
  */
-struct Schedule make_schedule(struct Worker* workers[], const size_t worker_count, const struct RequiredWorkers required_workers);
+ Schedule make_schedule( Worker* workers[], const size_t worker_count, const  RequiredWorkers required_workers);
 
 /**
  * Laver den første generation af individer
@@ -69,7 +73,7 @@ struct Schedule make_schedule(struct Worker* workers[], const size_t worker_coun
  * @param[in] population_size mængden af
  * @param[out] schedules der hvor populationen bliver gemt
  */
-void generate_initial_population(struct RequiredWorkers required_workers, struct Worker* worker[], size_t worker_count, struct Schedule schedules[], unsigned int population_size);
+void generate_initial_population( RequiredWorkers required_workers,  Worker* worker[], size_t worker_count, Schedule* schedules, unsigned int population_size);
 
 /**
  * Laver et enkelt tilfældigt skema
@@ -78,7 +82,7 @@ void generate_initial_population(struct RequiredWorkers required_workers, struct
  * @param[in] required_workers antallet af medarbejdere der er brug for
  * @param[out] schedule der hvor det tilfældige skema bliver gemt
  */
-void generate_random_schedule(struct Worker* workers[], const size_t worker_count, const struct RequiredWorkers required_workers, struct Schedule* schedule);
+void generate_random_schedule( Worker* workers[], const size_t worker_count, const  RequiredWorkers required_workers,  Schedule* schedule);
 
 
 /**
@@ -87,7 +91,7 @@ void generate_random_schedule(struct Worker* workers[], const size_t worker_coun
  * @param[in] required_workers mængden af medarbejdere der er brug for
  * @returns en værdi som siger hvor god planen er, nu højere nu bedre
  */
-double evaluate_schedule(struct Schedule* schedule, const struct RequiredWorkers required_workers);
+double evaluate_schedule(Schedule* schedule, const  RequiredWorkers required_workers, Worker* worker, unsigned int amount_of_workers);
 
 
 /**
@@ -96,21 +100,21 @@ double evaluate_schedule(struct Schedule* schedule, const struct RequiredWorkers
  * @param[out] antallet af workers som blev indlæst fra filens
  * @returns en array som er worker_count stor af Worker
  */
-struct Worker* read_workers(FILE* file, size_t* worker_count);
+ Worker* read_workers(FILE* file, size_t* worker_count);
 
 /**
  * Skriver schedule ud i en fil
  * @param[in, out] file en åben fil hvor schedule skal skrives til
  * @param[in] schedule skemaet som skal skrives
  */
-void write_schedule(FILE* file, const struct Schedule* schedule);
+void write_schedule(FILE* file, const  Schedule* schedule);
 
 /**
  * Læser en schedule som er gemt i en fil
  * @param[in, out] file en åben fil hvor schedule skal læses fra
  * @return det indlæste skema
  */
-struct Schedule read_schedule(FILE* file);
+ Schedule read_schedule(FILE* file);
 
 /**
  * skriver et pænt skema for en enkelt person til en fil
@@ -118,19 +122,23 @@ struct Schedule read_schedule(FILE* file);
  * @param[in] worker den medarbejder skemaet skal printes til
  * @param[in] skemaet som er lavet for medarbejderen
  */
-void print_worker_schedule(FILE* file, const struct Worker* worker, const struct Schedule* schedule);
+void print_worker_schedule(FILE* file, const  Worker* worker, const  Schedule* schedule);
 
 void fatal_error(const char* reason);
+
+void evaluate_schedule_required_workers( Schedule* schedule, const RequiredWorkers required_workers, unsigned int block_number, size_t j);
 
 enum Shift string_to_shift(char* input);
 
 enum Day string_to_day(char* input);
 
-unsigned int get_required_workers(struct RequiredWorkers required_workers, enum Shift shift);
+unsigned int get_required_workers( RequiredWorkers required_workers, enum Shift shift);
+
+void evaluate_schedule_preferred_day_off(Schedule* schedule, Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers, unsigned int i);
 
 int compare_schedule(const void* a, const void* b);
 
-void combine_schedule(const struct Schedule* a, const struct Schedule* b, struct Schedule* out);
+void combine_schedule(const  Schedule* a, const  Schedule* b,  Schedule* out);
 
 int random_number(int min, int max);
 
@@ -138,11 +146,11 @@ int get_required_for_shift(struct RequiredWorkers required_workers, enum Shift s
 
 int main(int argc, char** argv) {
 	FILE* fil = fopen("input.csv", "r");
-	struct Worker* workers_direct;
+	Worker* workers_direct;
 	size_t worker_count = 0;
-	struct Schedule schedule;
-	struct RequiredWorkers required_workers;
-	struct Worker **workers;
+	Schedule schedule;
+	RequiredWorkers required_workers;
+	Worker **workers;
 	size_t i = 0;
 
 	srand(time(NULL));
@@ -154,6 +162,7 @@ int main(int argc, char** argv) {
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
 	}
+
 
 	workers_direct = read_workers(fil, &worker_count);
 
@@ -167,13 +176,26 @@ int main(int argc, char** argv) {
 	printf("Så laver vi et skema\n");
 
 	schedule = make_schedule(workers, worker_count, required_workers);
+
 	getchar();
+	
+	
+	// BlockSchedule hejmeddig;
+	// Schedule aSkema;
+	// aSkema.blocks[0] = hejmeddig;
+	// hejmeddig.workers = workerPointerArray;
+	// RequiredWorkers reqwork;
+	// Schedule array[2];
+	// array[0] = aSkema;
+	// printf("%s",(aSkema.blocks[0].workers[0]->name));
+	// evaluate_schedule(array,reqwork);
+	
 	return 0;
 }
 
-struct Worker* read_workers(FILE* fil, size_t* worker_count) {
+ Worker* read_workers(FILE* fil, size_t* worker_count) {
 	size_t allocated_workers = 10;
-	struct Worker* workers = malloc(allocated_workers * sizeof(struct Worker));
+	 Worker* workers = malloc(allocated_workers * sizeof( Worker));
 
 	if (workers == NULL) {
 		fatal_error("Ikke mere hukommelse");
@@ -187,7 +209,7 @@ struct Worker* read_workers(FILE* fil, size_t* worker_count) {
 		char day_text[33];
 		if (*worker_count + 1 >= allocated_workers) {
 			allocated_workers += 10;
-			workers = realloc(workers, allocated_workers * sizeof(struct Worker));
+			workers = realloc(workers, allocated_workers * sizeof( Worker));
 			if (workers == NULL) {
 				fatal_error("Ikke mere hukommelse");
 			}
@@ -220,7 +242,7 @@ struct Worker* read_workers(FILE* fil, size_t* worker_count) {
 
 		*worker_count += 1;
 	}
-	return realloc(workers, *worker_count * sizeof(struct Worker));
+	return realloc(workers, *worker_count * sizeof( Worker));
 }
 
 void fatal_error(const char* reason) {
@@ -232,7 +254,6 @@ void fatal_error(const char* reason) {
 	exit(EXIT_FAILURE);
 
 }
-
 
 enum Shift string_to_shift(char* input) {
 	if (strcmp(input, "nat") == 0) {
@@ -265,10 +286,7 @@ enum Day string_to_day(char* input) {
 		return DAY_INVALID;
 	}
 }
-
-struct Schedule make_schedule(struct Worker *workers[], const size_t worker_count, const struct RequiredWorkers required_workers)
-{
-
+ Schedule make_schedule( Worker* workers[], const size_t worker_count, const RequiredWorkers required_workers) {
 	struct Schedule *population = malloc(sizeof(struct Schedule) * 1000);
 	int generation = 1;
 	generate_initial_population(required_workers, workers, worker_count, population, 1000);
@@ -299,10 +317,10 @@ void generate_initial_population(struct RequiredWorkers required_workers, struct
 }
 
 void generate_random_schedule(
-	struct Worker *workers[],
+	Worker *workers[],
 	const size_t worker_count,
-	const struct RequiredWorkers required_workers,
-	struct Schedule *schedule)
+	const RequiredWorkers required_workers,
+	Schedule *schedule)
 {
 	int day;
 	for (day = 0; day < 7; day++) {
@@ -345,24 +363,148 @@ int random_number(int min, int max) {
 	return (int) round(min + (((double)rand()) / RAND_MAX) * (max - min));
 }
 
-double evaluate_schedule(struct Schedule* schedule, const struct RequiredWorkers required_workers) {
-	return 0;
+double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_workers, Worker* worker, unsigned int amount_of_workers){
+	size_t i, j, k, m;
+
+	for (i = 0; i < 7 ; i++){
+		Worker* assigned_workers = calloc(amount_of_workers,sizeof(Worker));
+		unsigned int amount_assigned_workers = 0;
+		
+		for (j = 0; j < 3; j++){
+			unsigned int block_number = i * 3 + j;
+			Worker** current_worker_array = (schedule->blocks[block_number]).workers;
+
+			for (k = 0; k < schedule->workers[block_number]; k++){
+				int unikt_navn = 1;
+				Worker current_worker = *(current_worker_array[k]);
+
+				/* Tjekker preferred shift */
+				if (current_worker.desired_shift == k) schedule->score += 1;
+
+				/* Tjekker flere vagter på en dag */
+				/*
+				for (m = 0; m < amount_assigned_workers; m++){
+					if (current_worker.uuid == assigned_workers[m].uuid){
+						schedule->score -= 1000;
+						unikt_navn = 0;
+						break;
+					}
+				}
+				*/
+				if(block_number - current_worker.last_shift < 3)
+				{
+					schedule->score -= 1000;
+				}
+
+				if (unikt_navn == 1){
+					assigned_workers[amount_assigned_workers] = current_worker;
+					amount_assigned_workers++;
+				} 
+				
+				/* Tjekker om det er cyklisk*/
+				if (i > 0){
+					if (current_worker.last_shift % 3 == 2){
+						if (!(block_number % 3 == 2 || block_number >= current_worker.last_shift + 3)){
+							schedule->score -= 1000;
+						}
+					}
+					else if (!(block_number % 3 == current_worker.last_shift % 3 || block_number == current_worker.last_shift % 3 + 1 || block_number >= current_worker.last_shift + 3)){
+						schedule->score -= 1000;
+					}
+				}
+				
+				/* Tjekker nattevagter i streg*/
+				if ( j == 0 ){
+					if (current_worker.last_shift == block_number - 3 ){
+						current_worker.consecutive_night_shifts += 1;
+						if (current_worker.consecutive_night_shifts > 2){
+							schedule->score -= 1000;
+						}
+					}
+				}
+				else{
+					current_worker.consecutive_night_shifts = 0;
+				}
+
+				/* Tjekker fridøgn */
+				if (block_number - current_worker.last_shift >= 5){
+					current_worker.day_off = 1;
+				}
+				/* Sætter last shift*/
+				current_worker.last_shift = block_number;
+			}
+			/* Tjekker om der er nok arbejdere*/
+
+		evaluate_schedule_required_workers(schedule, required_workers, block_number, j);
+		}
+		/* Tjekker pref day off og fridøgn*/
+	evaluate_schedule_preferred_day_off(schedule, worker, m, amount_assigned_workers, assigned_workers, amount_of_workers, i);
+	free(assigned_workers);
+	}
+
+return schedule->score;
 }
 
+void evaluate_schedule_required_workers( Schedule* schedule, const RequiredWorkers required_workers, unsigned int block_number, size_t j){
+	switch (j)
+			{
+			case 0:
+				if (required_workers.night_workers > schedule->workers[block_number]){
+					schedule->score -= 1000;
+				}
+				break;
+			case 1:
+				if (required_workers.day_workers > schedule->workers[block_number]){
+					schedule->score -= 1000;
+				}
+				break;
+
+			case 2:
+				if (required_workers.evening_workers > schedule->workers[block_number]){
+					schedule->score -= 1000;
+				}
+				break;
+			}
+}
+
+void evaluate_schedule_preferred_day_off(Schedule* schedule, Worker* worker, size_t m, size_t amount_assigned_workers, Worker* assigned_workers, unsigned int amount_of_workers, unsigned int i){
+	int l;
+	for (l = 0; l < amount_of_workers; l++){
+			if (worker[l].desired_day_off == i){
+				int day_off_bool = 1;
+				for (m = 0; m < amount_assigned_workers; m++){
+					if (worker[l].uuid == assigned_workers[m].uuid){
+						day_off_bool = 0;
+						break;
+					}
+				}
+			
+			if (day_off_bool == 1){
+				 schedule->score += 2;
+			}
+			}
+		if (worker[l].day_off != 1){
+			schedule->score -= 1000;
+		}
+	}
+}
+
+
+
+
 int compare_schedule(const void* a, const void* b) {
-	const struct Schedule* sa = a;
-	const struct Schedule* sb = b;
+	const  Schedule* sa = a;
+	const  Schedule* sb = b;
 
 	return sb->score - sa->score;
 }
 
-void combine_schedule(const struct Schedule* a, const struct Schedule* b, struct Schedule* out) {
+void combine_schedule(const  Schedule* a, const  Schedule* b,  Schedule* out) {
 	int crossover_start = random_number(0, 20);
 	int crossover_end = random_number(crossover_start + 1, 21);
-
-	const struct BlockSchedule* a_block = (const struct BlockSchedule*) a->blocks;
-	const struct BlockSchedule* b_block = (const struct BlockSchedule*) b->blocks;
-	struct BlockSchedule* out_block = (struct BlockSchedule*) out->blocks;
+  const BlockSchedule* a_block = (const  BlockSchedule*) a->blocks;
+	const BlockSchedule* b_block = (const  BlockSchedule*) b->blocks;
+	BlockSchedule* out_block = ( BlockSchedule*) out->blocks;
 
 	int j;
 
