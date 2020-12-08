@@ -69,6 +69,7 @@ struct Schedule make_schedule(struct Worker* workers[], const size_t worker_coun
  * @param[in] population_size mængden af
  * @param[out] schedules der hvor populationen bliver gemt
  */
+void generate_initial_population(struct RequiredWorkers required_workers, struct Worker* worker[], size_t worker_count, struct Schedule schedules[], unsigned int population_size);
 
 /**
  * Laver et enkelt tilfældigt skema
