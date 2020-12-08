@@ -276,10 +276,7 @@ enum Day string_to_day(char* input) {
 		return DAY_INVALID;
 	}
 }
-
-
  Schedule make_schedule( Worker* workers[], const size_t worker_count, const  RequiredWorkers required_workers) {
-	
 }
 
 
@@ -305,8 +302,8 @@ double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_wor
 		
 		for (j = 0; j < 3; j++){
 			unsigned int block_number = i * 3 + j;
-			
 			Worker** current_worker_array = (schedule->blocks[block_number]).workers;
+
 			for (k = 0; k < schedule->workers[block_number]; k++){
 				int unikt_navn = 1;
 				Worker current_worker = *(current_worker_array[k]);
@@ -315,6 +312,7 @@ double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_wor
 				if (current_worker.desired_shift == k) schedule->score += 1;
 
 				/* Tjekker flere vagter på en dag */
+				/*
 				for (m = 0; m < amount_assigned_workers; m++){
 					if (current_worker.uuid == assigned_workers[m].uuid){
 						schedule->score -= 1000;
@@ -322,6 +320,12 @@ double evaluate_schedule( Schedule* schedule, const RequiredWorkers required_wor
 						break;
 					}
 				}
+				*/
+				if(block_number - current_worker.last_shift < 3)
+				{
+					schedule->score -= 1000;
+				}
+
 				if (unikt_navn == 1){
 					assigned_workers[amount_assigned_workers] = current_worker;
 					amount_assigned_workers++;
