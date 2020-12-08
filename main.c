@@ -69,9 +69,8 @@ struct Schedule make_schedule(struct Worker* workers[], const size_t worker_coun
  * @param[in] population_size mængden af
  * @param[out] schedules der hvor populationen bliver gemt
  */
-void generate_initial_population(struct RequiredWorkers required_workers, struct Worker* worker[], size_t worker_count, struct Schedule[] schedules, unsigned int population_size)
+void generate_initial_population(struct RequiredWorkers required_workers, struct Worker* worker[], size_t worker_count, struct Schedule schedules[], unsigned int population_size);
 
-/*Expects that every block is preallocated for the amount of workers needed*/
 /**
  * Laver et enkelt tilfældigt skema
  * @param[in] workers alle medarbejdere
@@ -135,23 +134,38 @@ void combine_schedule(const struct Schedule* a, const struct Schedule* b, struct
 
 int random_number(int min, int max);
 
+int get_required_for_shift(struct RequiredWorkers required_workers, enum Shift shift);
+
 int main(int argc, char** argv) {
 	FILE* fil = fopen("input.csv", "r");
-	struct Worker* workers;
+	struct Worker* workers_direct;
 	size_t worker_count = 0;
 	struct Schedule schedule;
 	struct RequiredWorkers required_workers;
-	srand(time(NULL));
+	struct Worker **workers;
+	size_t i = 0;
 
+	srand(time(NULL));
+	printf("Starter programmet\n");
 	required_workers.night_workers = 40;
 	required_workers.day_workers = 80;
 	required_workers.evening_workers = 80;
-	
+
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
 	}
 
-	workers = read_workers(fil, &worker_count);
+	workers_direct = read_workers(fil, &worker_count);
+
+	workers = malloc(worker_count * sizeof(struct Worker*));
+	if (workers == NULL) {
+		fatal_error("ikke nok hukkomelse");
+	}
+	for (i = 0; i < worker_count; i++) {
+		workers[i] = &workers_direct[i];
+	}
+	printf("Så laver vi et skema\n");
+
 	schedule = make_schedule(workers, worker_count, required_workers);
 	getchar();
 	return 0;
@@ -166,7 +180,7 @@ struct Worker* read_workers(FILE* fil, size_t* worker_count) {
 	}
 
 	*worker_count = 0;
-	
+
 	while (!feof(fil)) {
 		int res = 0;
 		char shift_text[33];
@@ -191,7 +205,7 @@ struct Worker* read_workers(FILE* fil, size_t* worker_count) {
 
 		shift_text[32] = 0;
 		day_text[32] = 0;
-		
+
 		workers[*worker_count].desired_day_off = string_to_day(day_text);
 		if (workers[*worker_count].desired_day_off == DAY_INVALID) {
 			printf("Fejl i medarbejder list på linje %u ved dag: %s var invalid\n", *worker_count + 1, shift_text);
@@ -203,12 +217,6 @@ struct Worker* read_workers(FILE* fil, size_t* worker_count) {
 			printf("Fejl i medarbejder list på linje %u ved vagt: %s var invalid\n", *worker_count + 1, day_text);
 			fatal_error(NULL);
 		}
-
-		workers[*worker_count].last_block.day = DAY_INVALID;
-		workers[*worker_count].last_block.shift = SHIFT_INVALID;
-		workers[*worker_count].night_combo = 0;
-		workers[*worker_count].combo_start = 0;
-		workers[*worker_count].index = *worker_count;
 
 		*worker_count += 1;
 	}
@@ -258,19 +266,79 @@ enum Day string_to_day(char* input) {
 	}
 }
 
+struct Schedule make_schedule(struct Worker *workers[], const size_t worker_count, const struct RequiredWorkers required_workers)
+{
 
-struct Schedule make_schedule(struct Worker workers[], const size_t worker_count, const struct RequiredWorkers required_workers) {
-	
+	struct Schedule *population = malloc(sizeof(struct Schedule) * 1000);
+	int generation = 1;
+	generate_initial_population(required_workers, workers, worker_count, population, 1000);
+
+	while (1)
+	{
+		int i;
+		for (i = 0; i < 1000; i++) {
+			population[i].score = evaluate_schedule(&population[i], required_workers);
+		}
+
+		qsort(population, 1000, sizeof(struct Schedule), compare_schedule);
+		printf("Generation nummer %d. Max fitness er %f\n", generation, population[0]);
+
+		for (i = 0; i < 40; i++) {
+			int random = random_number(40, 960);
+			combine_schedule(&population[i], &population[random], &population[960 + i]);
+		}
+		generation++;
+	}
 }
 
+void generate_initial_population(struct RequiredWorkers required_workers, struct Worker *worker[], size_t worker_count, struct Schedule schedules[], unsigned int population_size) {
+	int i;
+	for (i = 0; i < population_size; i++) {
+		generate_random_schedule(worker, worker_count, required_workers, &schedules[i]);
+	}
+}
 
 void generate_random_schedule(
-	struct Worker workers[], 
-	const size_t worker_count, 
-	const struct RequiredWorkers required_workers, 
-	struct Schedule* schedule
-) {
-	
+	struct Worker *workers[],
+	const size_t worker_count,
+	const struct RequiredWorkers required_workers,
+	struct Schedule *schedule)
+{
+	int day;
+	for (day = 0; day < 7; day++) {
+		int j = worker_count;
+		int vagt;
+		for (vagt = 0; vagt < 3; vagt++) {
+			int required_workers_yep = get_required_for_shift(required_workers, (enum Shift) vagt);
+			int b;
+			schedule->blocks[day * 3 + vagt].workers = malloc(required_workers_yep * sizeof(struct Worker*));
+			if (schedule->blocks[day * 3 + vagt].workers == NULL) {
+				fatal_error("Hukkomelse er tom");
+			}
+			for (b = 0; b < required_workers_yep; b++) {
+				if (j <= 0) {
+					fatal_error("Not enough workers to fulfill a single day");
+				}
+				schedule->blocks[day * 3 + vagt].workers[b] = workers[random_number(0, j)];
+				j--; 
+			}
+		}
+	}
+}
+
+int get_required_for_shift(struct RequiredWorkers required_workers, enum Shift shift) {
+	switch (shift)
+	{
+	case SHIFT_NIGHT:
+		return required_workers.night_workers;
+	case SHIFT_DAY:
+		return required_workers.day_workers;
+	case SHIFT_EVENING:
+		return required_workers.evening_workers;
+	default:
+		fatal_error("fuck dig biyyyyytch");
+	}
+	return 0;
 }
 
 int random_number(int min, int max) {
@@ -278,7 +346,7 @@ int random_number(int min, int max) {
 }
 
 double evaluate_schedule(struct Schedule* schedule, const struct RequiredWorkers required_workers) {
-	
+	return 0;
 }
 
 int compare_schedule(const void* a, const void* b) {
@@ -291,7 +359,7 @@ int compare_schedule(const void* a, const void* b) {
 void combine_schedule(const struct Schedule* a, const struct Schedule* b, struct Schedule* out) {
 	int crossover_start = random_number(0, 20);
 	int crossover_end = random_number(crossover_start + 1, 21);
-	
+
 	const struct BlockSchedule* a_block = (const struct BlockSchedule*) a->blocks;
 	const struct BlockSchedule* b_block = (const struct BlockSchedule*) b->blocks;
 	struct BlockSchedule* out_block = (struct BlockSchedule*) out->blocks;
