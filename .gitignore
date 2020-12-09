@@ -2,3 +2,8 @@ a.exe
 a.out
 main.exe
 main
+output/*
+output
+bad_vagtplan.csv
+vagtplan-kopi.csv
+vagtplan.csv
