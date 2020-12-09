@@ -155,11 +155,11 @@ void test_vagtplan();
 void skab_vagtplan();
 
 int main(int argc, char** argv) {
-	/*if (argc == 2 && strcmp(argv[0], "test")) {*/
+	if (argc == 2 && strcmp(argv[0], "test")) {
 		test_vagtplan();
-	/*} else {
+	} else {
 		skab_vagtplan();
-	}*/
+	}
 	return 0;
 }
 
@@ -215,9 +215,9 @@ void skab_vagtplan() {
 	printf("Dit daglige tilfældige tal %d\n", random_number(0, 400));
 
 	printf("Starter programmet\n");
-	required_workers.night_workers = 2;
-	required_workers.day_workers = 3;
-	required_workers.evening_workers = 2;
+	required_workers.night_workers = 5;
+	required_workers.day_workers = 10;
+	required_workers.evening_workers = 7;
 
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
@@ -347,8 +347,11 @@ enum Day string_to_day(char* input) {
 			printf("Generation nummer %d. Max fitness er %f, værste: %f\n", generation, population[0].score, population[999].score);
 		}
 		for (i = 0; i < 40; i++) {
-			int random = random_number(40, 960);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[960 + i]);
+			int random = random_number(40, 840);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 1]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 2]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 3]);
 		}
 		generation++;
 	}
@@ -365,31 +368,31 @@ void generate_random_schedule(
 	Worker *workers[],
 	const size_t worker_count,
 	const RequiredWorkers required_workers,
-	Schedule *schedule)
-{
+	Schedule *schedule
+) {
 	int day;
 	
 	for (day = 0; day < 7; day++) {
-		int j = worker_count;
+		unsigned int workers_top = worker_count;
 		int vagt;
 		for (vagt = 0; vagt < 3; vagt++) {
 			int required_workers_yep = get_required_for_shift(required_workers, (enum Shift) vagt);
-			int b;
+			unsigned int worker_index;
 			schedule->blocks[day * 3 + vagt].workers = malloc(required_workers_yep * sizeof(struct Worker*));
 			if (schedule->blocks[day * 3 + vagt].workers == NULL) {
 				fatal_error("Hukkomelse er tom");
 			}
-			for (b = 0; b < required_workers_yep; b++) {
-				int random_index = random_number(0, j);
+			for (worker_index = 0; worker_index < required_workers_yep; worker_index++) {
+				int random_index = random_number(0, workers_top);
 				Worker* tmp = NULL;
-				if (j <= 0) {
+				if (workers_top <= 0) {
 					fatal_error("Not enough workers to fulfill a single day");
 				}
-				schedule->blocks[day * 3 + vagt].workers[b] = workers[random_index];
+				schedule->blocks[day * 3 + vagt].workers[worker_index] = workers[random_index];
 				tmp = workers[random_index];
-				workers[random_index] = workers[j - 1];
-				workers[j - 1] = tmp; 
-				j--; 
+				workers[random_index] = workers[workers_top - 1];
+				workers[workers_top - 1] = tmp; 
+				workers_top--; 
 			}
 		}
 	}
@@ -467,8 +470,10 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				
 				/*Tjekker om medarbejderen har arbejdet inden for de sidste 2 blokke eg. om de arbejder samme dag*/
 				if(block_number - current_worker->last_block <= 2 && day > 0) {
-						printf("Flere vagter samme dag\n");
-						printf("\nDag nummer: %d shift nummer: %d, worker nummer: %d\n", day, shift, k);
+					#ifdef DEBUG_FITNESS_PRINT
+					printf("Flere vagter samme dag\n");
+					printf("\nDag nummer: %d shift nummer: %d, worker nummer: %d\n", day, shift, k);
+					#endif
 					schedule->score -= 1000;
 				}
 
@@ -482,7 +487,9 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					/*Tjekker om vagten er om natten*/
 					if (current_worker->last_block % 3 == 2){
 						if (!(block_number % 3 == 2 || block_number >= current_worker->last_block + 3)){
-						printf("Cyklisk fejl aften\n");
+							#ifdef DEBUG_FITNESS_PRINT
+							printf("Cyklisk fejl aften\n");
+							#endif
 							schedule->score -= 1000;
 						}
 					}
@@ -491,7 +498,9 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 						block_number == current_worker->last_block % 3 + 1 || 
 						block_number >= current_worker->last_block + 3)
 					) {
+						#ifdef DEBUG_FITNESS_PRINT
 						printf("Cyklisk fejl\n");
+						#endif
 						schedule->score -= 1000;
 					}
 				}
