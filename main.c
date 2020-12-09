@@ -421,24 +421,39 @@ void generate_random_schedule(
 	Schedule *schedule
 ) {
 	int day;
-	
-	for (day = 0; day < 7; day++) {
+
+	//Foerste forloekke, repesentere de 7 dage i en uge.
+	for (day = 0; day < 7; day++)
+	{
+		// workers_top assignes til at have samme værdi som worker_count, dette er fordi vi skal gemme vaedien af worker_count.
 		unsigned int workers_top = worker_count;
-		int vagt;
-		for (vagt = 0; vagt < 3; vagt++) {
-			int required_workers_yep = get_required_for_shift(required_workers, (enum Shift) vagt);
+		int shift;
+
+		// Denne forloekke repensentere de 3 vagter på en dag, dette vil sige denne funktionen goere 3*7 gange.
+		for (shift = 0; shift < 3; shift++) {
+			/*Her bliver der aflokeret plads til den maengde af medarbejder der skal bruges for den shift*/
+			int required_workers_for_shift = get_required_for_shift(required_workers, (enum Shift) shift);
 			unsigned int worker_index;
-			schedule->blocks[day * 3 + vagt].workers = malloc(required_workers_yep * sizeof(struct Worker*));
-			if (schedule->blocks[day * 3 + vagt].workers == NULL) {
-				fatal_error("Hukkomelse er tom");
+			schedule->blocks[day * 3 + shift].workers = malloc(required_workers_for_shift * sizeof(struct Worker*));
+			if (schedule->blocks[day * 3 + shift].workers == NULL) {
+				fatal_error("Memory is empty");
 			}
-			for (worker_index = 0; worker_index < required_workers_yep; worker_index++) {
+
+			/*Her i denne forloekke bliver de medarbejdere indsat i det schedule*/
+			for (worker_index = 0; worker_index < required_workers_for_shift; worker_index++) {
+
+				/*Her finder vi en telfaeldig index, og derved finder en telfaeldig medarbejder*/
 				int random_index = random_number(0, workers_top);
 				Worker* tmp = NULL;
 				if (workers_top <= 0) {
 					fatal_error("Not enough workers to fulfill a single day");
 				}
-				schedule->blocks[day * 3 + vagt].workers[worker_index] = workers[random_index];
+
+				/*Her indsaettes den tilfaeldige medarbejder ind i det nye skema.*/
+				schedule->blocks[day * 3 + shift].workers[worker_index] = workers[random_index];
+
+				/*Her bliver den arbejder der er blevet sat ind i skema'et til sidst i arrayet, samtidig bliver counteren workers_top, sat en ned.
+				Derved kan det den tilfaeldige arbejder ikke tilgaas af*/
 				tmp = workers[random_index];
 				workers[random_index] = workers[workers_top - 1];
 				workers[workers_top - 1] = tmp; 
