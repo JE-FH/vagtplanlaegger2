@@ -457,7 +457,9 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}*/
 				
 				/*Tjekker om medarbejderen har arbejdet inden for de sidste 2 blokke eg. om de arbejder samme dag*/
-				if(block_number - current_worker->last_block <= 2) {
+				if(block_number - current_worker->last_block <= 2 && day > 0) {
+						printf("Flere vagter samme dag\n");
+						printf("\nDag nummer: %d shift nummer: %d, worker nummer: %d\n", day, shift, k);
 					schedule->score -= 1000;
 				}
 
@@ -471,6 +473,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					/*Tjekker om vagten er om natten*/
 					if (current_worker->last_block % 3 == 2){
 						if (!(block_number % 3 == 2 || block_number >= current_worker->last_block + 3)){
+						printf("Cyklisk fejl aften\n");
 							schedule->score -= 1000;
 						}
 					}
@@ -479,6 +482,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 						block_number == current_worker->last_block % 3 + 1 || 
 						block_number >= current_worker->last_block + 3)
 					) {
+						printf("Cyklisk fejl\n");
 						schedule->score -= 1000;
 					}
 				}
