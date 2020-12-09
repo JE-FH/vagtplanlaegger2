@@ -11,7 +11,7 @@ function tilfældig(liste) {
 }
 uuid_counter = 0;
 let file_buffer = "";
-for (let i = 0; i < 400; i++) {
+for (let i = 0; i < 100; i++) {
     file_buffer += `${tilfældig(navne_liste)}, ${tilfældig(dag_list)}, ${tilfældig(vagt_liste)}, ${uuid_counter++}\n`;
 }
 
