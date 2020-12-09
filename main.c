@@ -122,7 +122,7 @@ Schedule read_schedule(FILE* file, RequiredWorkers* out, Worker** workers, size_
  * @param[in] worker den medarbejder skemaet skal printes til
  * @param[in] skemaet som er lavet for medarbejderen
  */
-void print_worker_schedule(FILE* file, const  Worker* worker[], const  Schedule* schedule);
+void print_worker_schedule(FILE* file, const Worker* worker, const Schedule* schedule, RequiredWorkers required_workers);
 
 void fatal_error(const char* reason);
 
@@ -150,20 +150,29 @@ Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned in
 
 const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
+const char* get_time_slot(enum Shift shift);
 
-void test_vagtplan();
+void test_vagtplan(const char* vagtplan_fil_navn);
 void skab_vagtplan();
+void print_vagtplaner(const char* vagtplan_fil_navn);
 
 int main(int argc, char** argv) {
-	/*if (argc == 2 && strcmp(argv[0], "test")) {*/
-		test_vagtplan();
-	/*} else {
+	if (argc >= 3) {
+		if (strcmp(argv[1], "test") == 0) {
+			test_vagtplan(argv[2]);
+		} else if (strcmp(argv[1], "print") == 0) {
+			print_vagtplaner(argv[2]);
+		} else {
+			printf("Forkert parameter, du kan bruge test eller print");
+			return EXIT_FAILURE;
+		}
+	} else {
 		skab_vagtplan();
-	}*/
+	}
 	return 0;
 }
 
-void test_vagtplan() {
+void test_vagtplan(const char* vagtplan_fil_navn) {
 	FILE* fil = fopen("medarbejdere.csv", "r");
 	RequiredWorkers required_workers;
 	Worker* workers_direct;
@@ -182,7 +191,7 @@ void test_vagtplan() {
 	}
 
 	fclose(fil);
-	fil = fopen("vagtplan.csv", "r");
+	fil = fopen(vagtplan_fil_navn, "r");
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne vagtplan.csv filen");
 	}
@@ -235,6 +244,47 @@ void skab_vagtplan() {
 	printf("Så laver vi et skema\n");
 
 	schedule = make_schedule(workers, worker_count, required_workers);
+}
+
+void print_vagtplaner(const char* vagtplan_fil_navn) {
+	FILE* fil = fopen("medarbejdere.csv", "r");
+	RequiredWorkers required_workers;
+	Worker* workers_direct;
+	Worker** workers;
+	size_t worker_count = 0;
+	Schedule schedule;
+	size_t i;
+	size_t worker_i;
+	char filnavn[100];
+
+	if (fil == NULL) {
+		fatal_error("Kunne ikke åbne medarbejdere.csv filen");
+	}
+	workers_direct = read_workers(fil, &worker_count);
+	workers = malloc(worker_count * sizeof(struct Worker*));
+	for (i = 0; i < worker_count; i++) {
+		workers[i] = &workers_direct[i];
+	}
+
+	fclose(fil);
+	fil = fopen(vagtplan_fil_navn, "r");
+	if (fil == NULL) {
+		fatal_error("Kunne ikke åbne vagtplan.csv filen");
+	}
+	
+	schedule = read_schedule(fil, &required_workers, workers, worker_count);
+	fclose(fil);
+
+
+	for (worker_i = 0; worker_i < worker_count; worker_i++) {
+		sprintf(filnavn, "output/%s.%u.txt", workers[worker_i]->name, workers[worker_i]->uuid);
+		fil = fopen(filnavn, "w");
+		if (fil == NULL) {
+			fatal_error("Kunne ikke åbne output filen");
+		}
+		print_worker_schedule(fil, workers[worker_i], &schedule, required_workers);
+		fclose(fil);
+	}
 }
 
 Worker* read_workers(FILE* fil, size_t* worker_count) {
@@ -347,8 +397,11 @@ enum Day string_to_day(char* input) {
 			printf("Generation nummer %d. Max fitness er %f, værste: %f\n", generation, population[0].score, population[999].score);
 		}
 		for (i = 0; i < 40; i++) {
-			int random = random_number(40, 960);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[960 + i]);
+			int random = random_number(40, 840);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 1]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 2]);
+			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 3]);
 		}
 		generation++;
 	}
@@ -365,31 +418,31 @@ void generate_random_schedule(
 	Worker *workers[],
 	const size_t worker_count,
 	const RequiredWorkers required_workers,
-	Schedule *schedule)
-{
+	Schedule *schedule
+) {
 	int day;
 	
 	for (day = 0; day < 7; day++) {
-		int j = worker_count;
+		unsigned int workers_top = worker_count;
 		int vagt;
 		for (vagt = 0; vagt < 3; vagt++) {
 			int required_workers_yep = get_required_for_shift(required_workers, (enum Shift) vagt);
-			int b;
+			unsigned int worker_index;
 			schedule->blocks[day * 3 + vagt].workers = malloc(required_workers_yep * sizeof(struct Worker*));
 			if (schedule->blocks[day * 3 + vagt].workers == NULL) {
 				fatal_error("Hukkomelse er tom");
 			}
-			for (b = 0; b < required_workers_yep; b++) {
-				int random_index = random_number(0, j);
+			for (worker_index = 0; worker_index < required_workers_yep; worker_index++) {
+				int random_index = random_number(0, workers_top);
 				Worker* tmp = NULL;
-				if (j <= 0) {
+				if (workers_top <= 0) {
 					fatal_error("Not enough workers to fulfill a single day");
 				}
-				schedule->blocks[day * 3 + vagt].workers[b] = workers[random_index];
+				schedule->blocks[day * 3 + vagt].workers[worker_index] = workers[random_index];
 				tmp = workers[random_index];
-				workers[random_index] = workers[j - 1];
-				workers[j - 1] = tmp; 
-				j--; 
+				workers[random_index] = workers[workers_top - 1];
+				workers[workers_top - 1] = tmp; 
+				workers_top--; 
 			}
 		}
 	}
@@ -706,4 +759,49 @@ const char* get_shift_as_string(enum Shift shift) {
 	}
 	fatal_error("Program fejl1");
 	return "";
+}
+
+void print_worker_schedule(FILE* file, const Worker* worker, const Schedule* schedule, RequiredWorkers required_workers) {
+	unsigned int day;
+	unsigned int shift;
+	fprintf(file,
+		"+---------------+--------+--------+--------+--------+--------+--------+--------+\n"
+		"|               | Mandag | Tirsdag| Onsdag | Torsdag| Fredag | Lørdag | Søndag |\n"
+		"+---------------+--------+--------+--------+--------+--------+--------+--------+\n"
+	);
+	for (shift = 0; shift < 3; shift++) {
+		fprintf(file, "| %s |", get_time_slot(shift));
+		for (day = 0; day < 7; day++) {
+			unsigned int worker_i;
+			unsigned int amount_of_workers = get_required_for_shift(required_workers, shift);
+			int found = 0;
+			for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
+				if (worker->uuid == schedule->blocks[shift + day * 3].workers[worker_i]->uuid) {
+					found = 1;
+					break;
+				}
+			}
+			if (found)  {
+				fprintf(file, " ###### |");
+			} else {
+				fprintf(file, "        |");
+			}
+		}
+		fprintf(file, "\n");
+	}
+	fprintf(file, "+---------------+--------+--------+--------+--------+--------+--------+--------+\n");
+}
+
+const char* get_time_slot(enum Shift shift) {
+	switch (shift) {
+		case SHIFT_NIGHT:
+			return "00:00 - 08:00";
+		case SHIFT_DAY:
+			return "08:00 - 16:00";
+		case SHIFT_EVENING:
+			return "16:00 - 24:00";
+		default:
+			fatal_error("Program fejl3");
+			return NULL;
+	}
 }
