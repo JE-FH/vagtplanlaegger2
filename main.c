@@ -106,7 +106,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
  * @param[in, out] file en åben fil hvor schedule skal skrives til
  * @param[in] schedule skemaet som skal skrives
  */
-void write_schedule(FILE* file, const  Schedule* schedule);
+void write_schedule(FILE* file, const  Schedule* schedule, RequiredWorkers required_workers);
 
 /**
  * Læser en schedule som er gemt i en fil
@@ -147,6 +147,9 @@ unsigned int get_required_for_shift(RequiredWorkers required_workers, enum Shift
 void set_required_for_shift(RequiredWorkers* required_workers, enum Shift shift, unsigned int val);
 
 Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned int uuid);
+
+const char* get_shift_as_string(enum Shift shift);
+const char* get_day_as_string(enum Day day);
 
 void test_vagtplan();
 void skab_vagtplan();
@@ -190,6 +193,12 @@ void test_vagtplan() {
 	score = evaluate_schedule(&schedule, required_workers, workers, worker_count);
 
 	printf("Vagtplanen fik en score på %f", score);
+
+	fil = fopen("vagtplan-kopi.csv", "w");
+	
+	write_schedule(fil, &schedule, required_workers);
+
+	fclose(fil);
 }
 
 void skab_vagtplan() {
@@ -661,6 +670,19 @@ Schedule read_schedule(FILE* file, RequiredWorkers* out, Worker** workers, size_
 	return rv;
 }
 
+void write_schedule(FILE* file, const  Schedule* schedule, RequiredWorkers required_workers) {
+	unsigned int block_id;
+	for (block_id = 0; block_id < 21; block_id++) {
+		unsigned int amount_of_workers = get_required_for_shift(required_workers, block_id % 3);
+		unsigned int i;
+		fprintf(file, "%s,%s", get_day_as_string(block_id / 3), get_shift_as_string(block_id % 3));
+		for (i = 0; i < amount_of_workers; i++) {
+			fprintf(file, ",%s.%u", schedule->blocks[block_id].workers[i]->name, schedule->blocks[block_id].workers[i]->uuid);
+		}
+		fprintf(file, ",$\n");
+	}
+}
+
 Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned int uuid) {
 	size_t i = 0;
 	for (i = 0; i < worker_count; i++) {
@@ -669,4 +691,45 @@ Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned in
 		}
 	}
 	return NULL;
+}
+
+const char* get_day_as_string(enum Day day){
+	switch (day) {
+	case DAY_MONDAY:
+		return "mandag";
+		break;
+	case DAY_TUESDAY:
+		return "tirsdag";
+	case DAY_WEDNESDAY:
+		return "onsdag";
+	case DAY_THURSDAY:
+		return "torsdag";
+	case DAY_FRIDAY:
+		return "fredag";
+	case DAY_SATURDAY:
+		return "lørdag";
+	case DAY_SUNDAY:
+		return "søndag";
+	case DAY_INVALID:
+		return "invalid";
+	default:
+		break;
+	}
+	fatal_error("Program fejl2");
+	return "";
+}
+
+const char* get_shift_as_string(enum Shift shift) {
+	switch (shift) {
+	case SHIFT_NIGHT:
+		return "nat";
+	case SHIFT_DAY:
+		return "dag";
+	case SHIFT_EVENING: 
+		return "nat";
+	case SHIFT_INVALID:
+		return "ingen";
+	}
+	fatal_error("Program fejl1");
+	return "";
 }
