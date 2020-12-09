@@ -15,4 +15,4 @@ for (let i = 0; i < 100; i++) {
     file_buffer += `${tilfældig(navne_liste)}, ${tilfældig(dag_list)}, ${tilfældig(vagt_liste)}, ${uuid_counter++}\n`;
 }
 
-fs.writeFileSync("input.csv", file_buffer);
+fs.writeFileSync("medarbejdere.csv", file_buffer);

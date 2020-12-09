@@ -7,6 +7,7 @@
 
 #define MAX_NAME_LENGTH 50
 #define POPULATION_SIZE 1000
+#define max(a,b) (((a) > (b)) ? (a) : (b))
 #undef DEBUG_FITNESS_FUNCTION
 
 enum Day {
@@ -223,12 +224,10 @@ void skab_vagtplan() {
 	
 	srand(time(NULL));
 
-	printf("Dit daglige tilfældige tal %d\n", random_number(0, 400));
-
 	printf("Starter programmet\n");
-	required_workers.night_workers = 2;
-	required_workers.day_workers = 3;
-	required_workers.evening_workers = 2;
+	required_workers.night_workers = 15;
+	required_workers.day_workers = 20;
+	required_workers.evening_workers = 10;
 
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
@@ -393,15 +392,14 @@ enum Day string_to_day(char* input) {
 	int generation = 1;
 	generate_initial_population(required_workers, workers, worker_count, population, POPULATION_SIZE);
 
-	while (generation < 100000)
-	{
+	while (generation < 100000) {
 		int i;
 		for (i = 0; i < POPULATION_SIZE; i++) {
 			population[i].score = evaluate_schedule(&population[i], required_workers, workers, worker_count);
 		}
 
 		qsort(population, POPULATION_SIZE, sizeof(struct Schedule), compare_schedule);
-		if (generation % 100 == 0) {
+		if (generation % 1000 == 0) {
 			printf("Generation nummer %d. Max fitness er %f, værste: %f\n", generation, population[0].score, population[999].score);
 		}
 		for (i = 0; i < 40; i++) {
@@ -631,7 +629,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 
 				/* Tjekker fridøgn */
-				if (current_worker->last_block > 0 && block_number - current_worker->last_block > 5){
+				if (block_number - max(current_worker->last_block, -1) > 5){
 					current_worker->day_off = 1;
 				}
 				/* Sætter last shift*/
@@ -656,7 +654,9 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 	/* Tjekker om der har været fridøgn*/
 	for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
 		if (worker[worker_i]->day_off == 0) {
-			schedule->score -= 1000;
+			if (!(worker[worker_i]->last_block > 0 && 21 - worker[worker_i]->last_block > 5)) {
+				schedule->score -= 1000;
+			}
 		}
 	}
 
