@@ -430,7 +430,7 @@ int random_number(int min, int max) {
 }
 
 double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_workers, Worker* worker[], unsigned int amount_of_workers){
-	unsigned int day, shift, k, m;
+	unsigned int day, shift, worker_number;
 
 	size_t worker_i = 0;
 	for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
@@ -441,48 +441,39 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 
 	schedule->score = 0;
 	for (day = 0; day < 7 ; day++){
-		/*Worker** assigned_workers = calloc(amount_of_workers, sizeof(Worker*));*/
-		/*unsigned int amount_assigned_workers = 0;*/
 		
 		for (shift = 0; shift < 3; shift++){
+
 			unsigned int block_number = day * 3 + shift;
 			Worker** current_worker_array = (schedule->blocks[block_number]).workers;
 			
 			unsigned int workers_needed = get_required_for_shift(required_workers, shift);
 
-			for (k = 0; k < workers_needed; k++) {
-				Worker* current_worker = current_worker_array[k];
+			for (worker_number = 0; worker_number < workers_needed; worker_number++) {
+				Worker* current_worker = current_worker_array[worker_number];
 
-				/* Tjekker preferred shift */
-				if (current_worker->desired_shift == shift) schedule->score += 1;
-
-				/* Tjekker flere vagter på en dag */
-				/*for (m = 0; m < amount_assigned_workers; m++){
-					if (current_worker->uuid == assigned_workers[m]->uuid){
-						schedule->score -= 1000;
-						unikt_navn = 0;
-						break;
-					}
-				}*/
-				
-				/*Tjekker om medarbejderen har arbejdet inden for de sidste 2 blokke eg. om de arbejder samme dag*/
-				if(block_number - current_worker->last_block <= 2 && day > 0) {
-						printf("Flere vagter samme dag\n");
-						printf("\nDag nummer: %d shift nummer: %d, worker nummer: %d\n", day, shift, k);
-					schedule->score -= 1000;
+				/* Vi gør så kun de workers med i skemaet kan give minuspoint for day_off */
+				if ( current_worker->day_off == 0){
+					current_worker->day_off == -1;
 				}
 
-				/*if (unikt_navn == 1){
-					assigned_workers[amount_assigned_workers] = current_worker;
-					amount_assigned_workers++;
-				}*/
+				/* Tjekker preferred shift */
+				if (current_worker->desired_shift == shift){
+					schedule->score += 1;
+				} 
+
+				/*Tjekker om medarbejderen har arbejdet den samme dag*/
+				if(block_number - current_worker->last_block <= 2 && day > 0) {
+						if (block_number - current_worker->last_block == 2 && block_number % 3 != 2){
+							schedule->score -= 1000;
+						}
+				}
 				
 				/* Tjekker om det er cyklisk*/
 				if (day > 0) {
 					/*Tjekker om vagten er om natten*/
 					if (current_worker->last_block % 3 == 2){
 						if (!(block_number % 3 == 2 || block_number >= current_worker->last_block + 3)){
-						printf("Cyklisk fejl aften\n");
 							schedule->score -= 1000;
 						}
 					}
@@ -491,7 +482,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 						block_number == current_worker->last_block % 3 + 1 || 
 						block_number >= current_worker->last_block + 3)
 					) {
-						printf("Cyklisk fejl\n");
 						schedule->score -= 1000;
 					}
 				}
@@ -504,7 +494,8 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 							schedule->score -= 1000;
 						}
 					}
-				} else {
+				} 
+				else {
 					current_worker->consecutive_night_shifts = 0;
 				}
 
@@ -514,7 +505,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 				/* Sætter last shift*/
 				current_worker->last_block = block_number;
-				/*Mangler at tjekke om en medarbejder arbejder for mange timer*/
 
 				/*Tjek preferred day*/
 				if (current_worker->desired_day_off == day) {
@@ -522,40 +512,20 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 			}
 		}
-		/* Tjekker pref day off og fridøgn*/
-		/*evaluate_schedule_preferred_day_off(schedule, worker, m, amount_assigned_workers, assigned_workers, amount_of_workers, day);
-		free(assigned_workers);*/
 	}
-	return schedule->score;
-}
-
-void evaluate_schedule_preferred_day_off(
-	Schedule* schedule, 
-	Worker* worker[], 
-	size_t m, 
-	size_t amount_assigned_workers, Worker** assigned_workers, 
-	unsigned int amount_of_workers, unsigned int i
-) {
-	int l;
-	for (l = 0; l < amount_of_workers; l++) {
-		if (worker[l]->desired_day_off == i) {
-			int day_off_bool = 1;
-			for (m = 0; m < amount_assigned_workers; m++) {
-				if (worker[l]->uuid == assigned_workers[m]->uuid) {
-					day_off_bool = 0;
-					break;
-				}
-			}
-		
-			if (day_off_bool == 1) {
-				schedule->score += 2;
-			}
-		}
-		if (worker[l]->day_off != 1) {
+	
+	/* Tjekker om der har været fridøgn*/
+	for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
+		if (worker[worker_i]->day_off == -1) {
+			printf("dayoff");
 			schedule->score -= 1000;
 		}
 	}
+
+	return schedule->score;
 }
+
+
 
 int compare_schedule(const void* a, const void* b) {
 	const  Schedule* sa = a;
