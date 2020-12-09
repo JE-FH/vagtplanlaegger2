@@ -433,14 +433,14 @@ void generate_random_schedule(
 ) {
 	int day;
 
-	//Foerste forloekke, repesentere de 7 dage i en uge.
+	/*Foerste forloekke, repesentere de 7 dage i en uge.*/
 	for (day = 0; day < 7; day++)
 	{
-		// workers_top assignes til at have samme værdi som worker_count, dette er fordi vi skal gemme vaedien af worker_count.
+		/*workers_top assignes til at have samme værdi som worker_count, dette er fordi vi skal gemme vaedien af worker_count.*/
 		unsigned int workers_top = worker_count;
 		int shift;
 
-		// Denne forloekke repensentere de 3 vagter på en dag, dette vil sige denne funktionen goere 3*7 gange.
+		/*Denne forloekke repensentere de 3 vagter på en dag, dette vil sige denne funktionen goere 3*7 gange.*/
 		for (shift = 0; shift < 3; shift++) {
 			/*Her bliver der aflokeret plads til den maengde af medarbejder der skal bruges for den shift*/
 			int required_workers_for_shift = get_required_for_shift(required_workers, (enum Shift) shift);
