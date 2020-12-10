@@ -151,6 +151,8 @@ void set_required_for_shift(RequiredWorkers* required_workers, enum Shift shift,
 
 Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned int uuid);
 
+RequiredWorkers input_required_workers();
+
 const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
 const char* get_time_slot(enum Shift shift);
@@ -196,7 +198,7 @@ void test_vagtplan(const char* vagtplan_fil_navn) {
 	fclose(fil);
 	fil = fopen(vagtplan_fil_navn, "r");
 	if (fil == NULL) {
-		fatal_error("Kunne ikke åbne vagtplan.csv filen");
+		fatal_error("Kunne ikke åbne vagtplan filen");
 	}
 	
 	schedule = read_schedule(fil, &required_workers, workers, worker_count);
@@ -218,16 +220,13 @@ void skab_vagtplan() {
 	Worker* workers_direct;
 	size_t worker_count = 0;
 	Schedule schedule;
-	RequiredWorkers required_workers;
+	RequiredWorkers required_workers = input_required_workers();
 	Worker **workers;
 	size_t i = 0;
 	
 	srand(time(NULL));
 
 	printf("Starter programmet\n");
-	required_workers.night_workers = 15;
-	required_workers.day_workers = 20;
-	required_workers.evening_workers = 10;
 
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
@@ -548,8 +547,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				} 
 
 				/*Tjekker 11 timers reglen*/
-				if(block_number - current_worker->last_block <= 2 /*&& day > 0*/) {
-					/*if (block_number - current_worker->last_block == 2 && block_number % 3 != 2){*/
+				if(block_number - current_worker->last_block <= 2) {
 					schedule->score -= 1000;
 					#ifdef DEBUG_FITNESS_FUNCTION
 					printf("11 Timers regl ved %s %s %s.%u\n", 
@@ -573,39 +571,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					);
 					#endif
 				}
-				#ifdef bob
-				/* Tjekker om det er cyklisk*/
-				if (day > 0) {
-					/*Tjekker om vagten er om natten*/
-					if (last_shift == SHIFT_NIGHT){
-						if (!(shift == SHIFT_NIGHT || block_number >= current_worker->last_block + 3)){
-							schedule->score -= 1000;
-							#ifdef DEBUG_FITNESS_FUNCTION
-							printf("cyklisk brud ved %s %s %s.%u\n", 
-								get_day_as_string(day), 
-								get_shift_as_string(shift), 
-								current_worker->name,
-								current_worker->uuid
-							);
-							#endif
-						}
-					} else if (!(
-						shift == last_shift || 
-						block_number == last_shift + 1 || 
-						block_number >= current_worker->last_block + 3)
-					) {
-						schedule->score -= 1000;
-						#ifdef DEBUG_FITNESS_FUNCTION
-							printf("cyklisk brud ved %s %s %s.%u\n", 
-								get_day_as_string(day), 
-								get_shift_as_string(shift), 
-								current_worker->name,
-								current_worker->uuid
-							);
-						#endif
-					}
-				}
-				#endif
 				/* Tjekker nattevagter i streg*/
 				if (shift == SHIFT_NIGHT) {
 					if (current_worker->last_block == block_number - 3 ){
@@ -887,4 +852,33 @@ const char* get_time_slot(enum Shift shift) {
 			fatal_error("Program fejl3");
 			return NULL;
 	}
+}
+
+RequiredWorkers input_required_workers() {
+	RequiredWorkers rv;
+	int res;
+	int antallet_indtastet;
+	printf("Indtast antallet af nat arbejdere: ");
+
+	res = scanf(" %d", &antallet_indtastet);
+	if (res != 1 || antallet_indtastet < 1) {
+		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+	}
+	rv.night_workers = antallet_indtastet;
+	
+	printf("Indtast antallet af dag arbejdere: ");
+	res = scanf(" %d", &antallet_indtastet);
+	if (res != 1 || antallet_indtastet < 1) {
+		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+	}
+	rv.day_workers = antallet_indtastet;
+
+	printf("Indtast antallet af aften arbejdere: ");
+	res = scanf(" %d", &antallet_indtastet);
+	if (res != 1 || antallet_indtastet < 1) {
+		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+	}
+	rv.evening_workers = antallet_indtastet;
+
+	return rv;
 }
