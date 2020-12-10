@@ -8,7 +8,7 @@
 #define MAX_NAME_LENGTH 50
 #define POPULATION_SIZE 1000
 #define AMOUNT_OF_BEST_INDIVIDUALS 40
-#define AMOUNT_OF_CHILDREN 10
+#define AMOUNT_OF_CHILDREN 4
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #undef DEBUG_FITNESS_FUNCTION
 
@@ -155,12 +155,7 @@ Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned in
 
 RequiredWorkers input_required_workers();
 
-void free_schedule(Schedule* schedule) {
-	unsigned int i;
-	for (i = 0; i < 21; i++) {
-		free(schedule->blocks[i].workers);
-	}
-}
+void free_schedule(Schedule* schedule);
 
 const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
@@ -405,14 +400,15 @@ enum Day string_to_day(char* input) {
 		return DAY_INVALID;
 	}
 }
- Schedule make_schedule(Worker* workers[], const size_t worker_count, const RequiredWorkers required_workers) {
+
+Schedule make_schedule(Worker* workers[], const size_t worker_count, const RequiredWorkers required_workers) {
 	struct Schedule *population = malloc(sizeof(struct Schedule) * POPULATION_SIZE);
 	int generation = 1;
 	size_t i;
 	Schedule rv;
 	generate_initial_population(required_workers, workers, worker_count, population, POPULATION_SIZE);
 
-	while (generation < 1000) {
+	while (generation < 100000) {
 		for (i = 0; i < POPULATION_SIZE; i++) {
 			population[i].score = evaluate_schedule(&population[i], required_workers, workers, worker_count);
 		}
@@ -907,4 +903,11 @@ RequiredWorkers input_required_workers() {
 	rv.evening_workers = antallet_indtastet;
 
 	return rv;
+}
+
+void free_schedule(Schedule* schedule) {
+	unsigned int i;
+	for (i = 0; i < 21; i++) {
+		free(schedule->blocks[i].workers);
+	}
 }
