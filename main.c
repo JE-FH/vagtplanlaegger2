@@ -7,6 +7,8 @@
 
 #define MAX_NAME_LENGTH 50
 #define POPULATION_SIZE 1000
+#define AMOUNT_OF_BEST_INDIVIDUALS 40
+#define AMOUNT_OF_CHILDREN 10
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #undef DEBUG_FITNESS_FUNCTION
 
@@ -153,6 +155,13 @@ Worker* find_worker_from_uuid(Worker** workers, size_t worker_count, unsigned in
 
 RequiredWorkers input_required_workers();
 
+void free_schedule(Schedule* schedule) {
+	unsigned int i;
+	for (i = 0; i < 21; i++) {
+		free(schedule->blocks[i].workers);
+	}
+}
+
 const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
 const char* get_time_slot(enum Shift shift);
@@ -213,6 +222,10 @@ void test_vagtplan(const char* vagtplan_fil_navn) {
 	write_schedule(fil, &schedule, required_workers);
 
 	fclose(fil);
+
+	free_schedule(&schedule);
+	free(workers);
+	free(workers_direct);
 }
 
 void skab_vagtplan() {
@@ -226,13 +239,12 @@ void skab_vagtplan() {
 	
 	srand(time(NULL));
 
-	printf("Starter programmet\n");
-
 	if (fil == NULL) {
 		fatal_error("Kunne ikke åbne input csv filen");
 	}
 
 	workers_direct = read_workers(fil, &worker_count);
+	fclose(fil);
 
 	workers = malloc(worker_count * sizeof(struct Worker*));
 	if (workers == NULL) {
@@ -241,7 +253,7 @@ void skab_vagtplan() {
 	for (i = 0; i < worker_count; i++) {
 		workers[i] = &workers_direct[i];
 	}
-	printf("Så laver vi et skema\n");
+	printf("Starter det genetiske algoritme\n");
 
 	schedule = make_schedule(workers, worker_count, required_workers);
 
@@ -250,6 +262,9 @@ void skab_vagtplan() {
 	write_schedule(fil, &schedule, required_workers);
 
 	fclose(fil);
+	free_schedule(&schedule);
+	free(workers);
+	free(workers_direct);
 }
 
 void print_vagtplaner(const char* vagtplan_fil_navn) {
@@ -291,6 +306,10 @@ void print_vagtplaner(const char* vagtplan_fil_navn) {
 		print_worker_schedule(fil, workers[worker_i], &schedule, required_workers);
 		fclose(fil);
 	}
+
+	free_schedule(&schedule);
+	free(workers);
+	free(workers_direct);
 }
 
 Worker* read_workers(FILE* fil, size_t* worker_count) {
@@ -389,30 +408,37 @@ enum Day string_to_day(char* input) {
  Schedule make_schedule(Worker* workers[], const size_t worker_count, const RequiredWorkers required_workers) {
 	struct Schedule *population = malloc(sizeof(struct Schedule) * POPULATION_SIZE);
 	int generation = 1;
+	size_t i;
+	Schedule rv;
 	generate_initial_population(required_workers, workers, worker_count, population, POPULATION_SIZE);
 
-	while (generation < 100000) {
-		int i;
+	while (generation < 1000) {
 		for (i = 0; i < POPULATION_SIZE; i++) {
 			population[i].score = evaluate_schedule(&population[i], required_workers, workers, worker_count);
 		}
 
 		qsort(population, POPULATION_SIZE, sizeof(struct Schedule), compare_schedule);
 		if (generation % 1000 == 0) {
-			printf("Generation nummer %d. Max fitness er %f, værste: %f\n", generation, population[0].score, population[999].score);
+			printf("Generation nummer %d. Max fitness er %f, værste: %f\n", generation, population[0].score, population[POPULATION_SIZE - 1].score);
 		}
-		for (i = 0; i < 40; i++) {
-			int random = random_number(40, 840);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4]);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 1]);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 2]);
-			combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[840 + i * 4 + 3]);
+		for (i = 0; i < AMOUNT_OF_BEST_INDIVIDUALS; i++) {
+			int random = random_number(AMOUNT_OF_BEST_INDIVIDUALS, POPULATION_SIZE - AMOUNT_OF_BEST_INDIVIDUALS * AMOUNT_OF_CHILDREN);
+			size_t j;
+			for (j = 0; j < AMOUNT_OF_CHILDREN; j++) {
+				combine_schedule(workers, worker_count, required_workers, &population[i], &population[random], &population[POPULATION_SIZE - AMOUNT_OF_BEST_INDIVIDUALS * AMOUNT_OF_CHILDREN + i * 4 + j]);
+			}
 		}
 		generation++;
 	}
 	qsort(population, POPULATION_SIZE, sizeof(struct Schedule), compare_schedule);
-	/*Vi skal deallkoere alt sammen*/
-	return population[0];
+	/*Vi skal deallkoere alt sammen undtagen den første som vi skal bruge*/
+	for (i = 1; i < POPULATION_SIZE; i++) {
+		free_schedule(&population[i]);
+	}
+	/*Så kopier vi den første schedule inden vi deallokere den*/
+	rv = population[0];
+	free(population);
+	return rv;
 }
 
 void generate_initial_population(struct RequiredWorkers required_workers, struct Worker *worker[], size_t worker_count, struct Schedule schedules[], unsigned int population_size) {
