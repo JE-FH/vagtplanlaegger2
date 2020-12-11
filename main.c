@@ -522,16 +522,32 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 		for (shift = 0; shift < 3; shift++) {
 
 			unsigned int block_number = day * 3 + shift;
-			Worker** current_worker_array = (schedule->blocks[block_number]).workers;
-			
 			unsigned int workers_needed = get_required_for_shift(required_workers, shift);
-
+			Worker** current_worker_array = (schedule->blocks[block_number]).workers;	
+			
 			for (worker_number = 0; worker_number < workers_needed; worker_number++) {
 				Worker* current_worker = current_worker_array[worker_number];
-				enum Shift last_shift = current_worker->last_block % 3;
-				enum Day last_day = current_worker->last_block / 3;
+				enum Day last_day;
+				enum Shift last_shift; 
+				
+				if (current_worker->last_block < 0){
+					last_shift = 3;
+				}
+				else{
+					last_shift = current_worker->last_block % 3;
+				}
+				/* Alle workers starter med day_off sat til minus 1, så hvis en worker ikke er i skemaet er værdien -1
+				Hvis de er med i skemaet og ikke får et fridøgn er */
 				if (current_worker->day_off == -1){
 					current_worker->day_off = 0;
+				}
+				/* Vi sørger for at last_day er en korrekt dag 
+				*/
+				if (current_worker->last_block < 0){
+					last_day = DAY_INVALID;
+				}
+				else{
+					current_worker->last_block / 3;
 				}
 
 				/* Tjekker preferred shift */
@@ -548,21 +564,19 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				} 
 
 				/*Tjekker 11 timers reglen*/
-				if(block_number - current_worker->last_block <= 2 /*&& day > 0*/) {
-					/*if (block_number - current_worker->last_block == 2 && block_number % 3 != 2){*/
+				if(block_number - current_worker->last_block <= 2 && current_worker->last_block >= 0) {
 					schedule->score -= 1000;
-					#ifdef DEBUG_FITNESS_FUNCTION
-					printf("11 Timers regl ved %s %s %s.%u\n", 
+					#ifdef DEBUG_FITNESS_FUNCTION.
+					printf("11 Timers regel ved %s %s %s.%u\n", 
 						get_day_as_string(day), 
 						get_shift_as_string(shift), 
 						current_worker->name,
 						current_worker->uuid
-					);
+					);	
 					#endif
-					/*}*/
 				}
 				/*Den opfylder ikke cyklisk hvis det er 1 dag siden man har arbejdet og 5 blokke siden, men hvis der er gået 2 dage så overholder den*/
-				if (day - last_day == 1 && block_number - current_worker->last_block == 5) {
+				if (day - last_day == 1 && block_number - current_worker->last_block == 5 && current_worker->last_block >= 0) {
 					schedule->score -= 1000;
 					#ifdef DEBUG_FITNESS_FUNCTION
 					printf("cyklisk brud ved %s %s %s.%u\n", 
@@ -573,6 +587,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					);
 					#endif
 				}
+				//current_worker->last_block == block_number % 3 || current_worker->last_block == block_number + 1 % 3 && block_number - current_worker->last_block > 2 && day - last_day == 1
 				#ifdef bob
 				/* Tjekker om det er cyklisk*/
 				if (day > 0) {
@@ -608,7 +623,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				#endif
 				/* Tjekker nattevagter i streg*/
 				if (shift == SHIFT_NIGHT) {
-					if (current_worker->last_block == block_number - 3 ){
+					if (current_worker->last_block == block_number - 3){
 						if (current_worker->consecutive_night_shifts >= 2){
 							schedule->score -= 1000;
 							#ifdef DEBUG_FITNESS_FUNCTION
@@ -628,8 +643,8 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					current_worker->consecutive_night_shifts = 0;
 				}
 
-				/* Tjekker fridøgn */
-				if (block_number - max(current_worker->last_block, -1) > 5){
+				/* Tjekker fridøgn, max af last_block og 0 fordi, hvis din første vagt er blok 6 har du haft et fridøgn */
+				if (block_number - max(current_worker->last_block, 0) > 5){
 					current_worker->day_off = 1;
 				}
 				/* Sætter last shift*/
