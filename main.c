@@ -553,21 +553,19 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				
 				if (current_worker->last_block < 0){
 					last_shift = 3;
-				}
-				else{
+				} else{
 					last_shift = current_worker->last_block % 3;
 				}
 				/* Alle workers starter med day_off sat til minus 1, så hvis en worker ikke er i skemaet er værdien -1
-				Hvis de er med i skemaet og ikke får et fridøgn er */
+				Hvis de er med i skemaet og ikke får et fridøgn er den lig 0 */
 				if (current_worker->day_off == -1){
 					current_worker->day_off = 0;
 				}
-				/* Vi sørger for at last_day er en korrekt dag 
-				*/
+
+				/* Vi sørger for at last_day er en korrekt dag */
 				if (current_worker->last_block < 0){
 					last_day = DAY_INVALID;
-				}
-				else{
+				} else{
 					current_worker->last_block / 3;
 				}
 
@@ -586,7 +584,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 
 				/*Tjekker 11 timers reglen*/
 				if(block_number - current_worker->last_block <= 2 && current_worker->last_block >= 0) {
-					schedule->score -= 1000;
+		 			schedule->score -= 1000;
 					#ifdef DEBUG_FITNESS_FUNCTION.
 					printf("11 Timers regel ved %s %s %s.%u\n", 
 						get_day_as_string(day), 
@@ -634,6 +632,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				if (block_number - max(current_worker->last_block, 0) > 5){
 					current_worker->day_off = 1;
 				}
+				
 				/* Sætter last shift*/
 				current_worker->last_block = block_number;
 
