@@ -335,7 +335,7 @@ Worker* read_workers(FILE* fil, unsigned int* worker_count) {
 		);
 
 		if (res != 4) {
-			printf("Fejl i medarbejder list på linje %lu og kolonne %d\n", *worker_count + 1, res);
+			printf("Fejl i medarbejder liste på linje %lu og kolonne %d\n", *worker_count + 1, res);
 			fatal_error(NULL);
 		}
 
@@ -344,13 +344,13 @@ Worker* read_workers(FILE* fil, unsigned int* worker_count) {
 
 		workers[*worker_count].desired_day_off = string_to_day(day_text);
 		if (workers[*worker_count].desired_day_off == DAY_INVALID) {
-			printf("Fejl i medarbejder list på linje %lu ved dag: %s var invalid\n", *worker_count + 1, shift_text);
+			printf("Fejl i medarbejder liste på linje %lu ved dag: %s er invalid\n", *worker_count + 1, shift_text);
 			fatal_error(NULL);
 		}
 
 		workers[*worker_count].desired_shift = string_to_shift(shift_text);
 		if (workers[*worker_count].desired_shift == SHIFT_INVALID) {
-			printf("Fejl i medarbejder list på linje %lu ved vagt: %s var invalid\n", *worker_count + 1, day_text);
+			printf("Fejl i medarbejder liste på linje %lu ved vagt: %s er invalid\n", *worker_count + 1, day_text);
 			fatal_error(NULL);
 		}
 
@@ -466,7 +466,7 @@ void generate_random_schedule(
 			unsigned int worker_index;
 			schedule->blocks[day * 3 + shift].workers = malloc(required_workers_for_shift * sizeof(struct Worker*));
 			if (schedule->blocks[day * 3 + shift].workers == NULL) {
-				fatal_error("Memory is empty");
+				fatal_error("Kunne ikke allokere mere hukommelse");
 			}
 
 			/*Her i denne forloekke bliver de medarbejdere indsat i det schedule*/
@@ -476,7 +476,7 @@ void generate_random_schedule(
 				int random_index = random_number(0, workers_top);
 				Worker* tmp = NULL;
 				if (workers_top <= 0) {
-					fatal_error("Not enough workers to fulfill a single day");
+					fatal_error("Ikke nok medarbejdere til at lave en valid plan for en dag");
 				}
 
 				/*Her indsaettes den tilfaeldige medarbejder ind i det nye skema.*/
@@ -541,7 +541,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 	for (day = 0; day < 7 ; day++) {
 
 		for (shift = 0; shift < 3; shift++) {
-
 			unsigned int block_number = day * 3 + shift;
 			unsigned int workers_needed = get_required_for_shift(required_workers, shift);
 			Worker** current_worker_array = (schedule->blocks[block_number]).workers;	
@@ -584,8 +583,8 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 
 				/*Tjekker 11 timers reglen*/
 				if(block_number - current_worker->last_block <= 2 && current_worker->last_block >= 0) {
-		 			schedule->score -= 1000;
-					#ifdef DEBUG_FITNESS_FUNCTION.
+					schedule->score -= 1000;
+					#ifdef DEBUG_FITNESS_FUNCTION
 					printf("11 Timers regel ved %s %s %s.%u\n", 
 						get_day_as_string(day), 
 						get_shift_as_string(shift), 
@@ -697,7 +696,7 @@ void combine_schedule(Worker* workers[], unsigned int worker_count, RequiredWork
 			int random_index = random_number(0, top);
 			Worker* tmp = NULL;
 			if (j <= 0) {
-				fatal_error("Not enough workers to fulfill a single day");
+				fatal_error("Ikke nok medarbejdere til at lave en valid plan for en dag");
 			}
 			out_block[random_block_index].workers[i] = workers[random_index];
 			tmp = workers[random_index];
@@ -837,7 +836,7 @@ const char* get_shift_as_string(enum Shift shift) {
 	case SHIFT_DAY:
 		return "dag";
 	case SHIFT_EVENING: 
-		return "nat";
+		return "aften";
 	case SHIFT_INVALID:
 		return "ingen";
 	}
@@ -898,21 +897,21 @@ RequiredWorkers input_required_workers() {
 
 	res = scanf(" %d", &antallet_indtastet);
 	if (res != 1 || antallet_indtastet < 1) {
-		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+		fatal_error("Forkert formateret tal, det skal være et positivt heltal");
 	}
 	rv.night_workers = antallet_indtastet;
 	
 	printf("Indtast antallet af dag arbejdere: ");
 	res = scanf(" %d", &antallet_indtastet);
 	if (res != 1 || antallet_indtastet < 1) {
-		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+		fatal_error("Forkert formateret tal, det skal være et positivt heltal");
 	}
 	rv.day_workers = antallet_indtastet;
 
 	printf("Indtast antallet af aften arbejdere: ");
 	res = scanf(" %d", &antallet_indtastet);
 	if (res != 1 || antallet_indtastet < 1) {
-		fatal_error("Forkert formateret tal, det skal være et positivt hel tal");
+		fatal_error("Forkert formateret tal, det skal være et positivt heltal");
 	}
 	rv.evening_workers = antallet_indtastet;
 
