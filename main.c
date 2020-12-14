@@ -466,7 +466,7 @@ void generate_random_schedule(
 			unsigned int worker_index;
 			schedule->blocks[day * 3 + shift].workers = malloc(required_workers_for_shift * sizeof(struct Worker*));
 			if (schedule->blocks[day * 3 + shift].workers == NULL) {
-				fatal_error("Memory is empty");
+				fatal_error("Kunne ikke allokere mere hukommelse");
 			}
 
 			/*Her i denne forloekke bliver de medarbejdere indsat i det schedule*/
@@ -476,7 +476,7 @@ void generate_random_schedule(
 				int random_index = random_number(0, workers_top);
 				Worker* tmp = NULL;
 				if (workers_top <= 0) {
-					fatal_error("Not enough workers to fulfill a single day");
+					fatal_error("Ikke nok medarbejdere til at lave en valid plan for en dag");
 				}
 
 				/*Her indsaettes den tilfaeldige medarbejder ind i det nye skema.*/
@@ -587,7 +587,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				/*Tjekker 11 timers reglen*/
 				if(block_number - current_worker->last_block <= 2 && current_worker->last_block >= 0) {
 					schedule->score -= 1000;
-					#ifdef DEBUG_FITNESS_FUNCTION.
+					#ifdef DEBUG_FITNESS_FUNCTION
 					printf("11 Timers regel ved %s %s %s.%u\n", 
 						get_day_as_string(day), 
 						get_shift_as_string(shift), 
@@ -698,7 +698,7 @@ void combine_schedule(Worker* workers[], unsigned int worker_count, RequiredWork
 			int random_index = random_number(0, top);
 			Worker* tmp = NULL;
 			if (j <= 0) {
-				fatal_error("Not enough workers to fulfill a single day");
+				fatal_error("Ikke nok medarbejdere til at lave en valid plan for en dag");
 			}
 			out_block[random_block_index].workers[i] = workers[random_index];
 			tmp = workers[random_index];
