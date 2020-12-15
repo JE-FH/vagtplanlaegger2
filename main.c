@@ -10,7 +10,6 @@
 #define AMOUNT_OF_BEST_INDIVIDUALS 40
 #define AMOUNT_OF_CHILDREN 4
 #define max(a,b) (((a) > (b)) ? (a) : (b))
-#undef DEBUG_FITNESS_FUNCTION
 
 enum Day {
 	DAY_MONDAY,
@@ -29,11 +28,6 @@ enum Shift {
 	SHIFT_EVENING,
 	SHIFT_INVALID
 };
-
-typedef struct Block {
-	enum Day day;
-	enum Shift shift;
-} Block;
 
 typedef struct Worker {
 	char name[MAX_NAME_LENGTH + 1];
@@ -161,27 +155,27 @@ const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
 const char* get_time_slot(enum Shift shift);
 
-void test_vagtplan(const char* vagtplan_fil_navn);
-void skab_vagtplan();
-void print_vagtplaner(const char* vagtplan_fil_navn);
+void test_schedule(const char* vagtplan_fil_navn);
+void create_schedule();
+void print_schedules(const char* vagtplan_fil_navn);
 
 int main(int argc, char** argv) {
 	if (argc >= 3) {
 		if (strcmp(argv[1], "test") == 0) {
-			test_vagtplan(argv[2]);
+			test_schedule(argv[2]);
 		} else if (strcmp(argv[1], "print") == 0) {
-			print_vagtplaner(argv[2]);
+			print_schedules(argv[2]);
 		} else {
 			printf("Forkert parameter, du kan bruge test eller print\n");
 			return EXIT_FAILURE;
 		}
 	} else {
-		skab_vagtplan();
+		create_schedule();
 	}
 	return 0;
 }
 
-void test_vagtplan(const char* vagtplan_fil_navn) {
+void test_schedule(const char* vagtplan_fil_navn) {
 	FILE* fil = fopen("medarbejdere.csv", "r");
 	RequiredWorkers required_workers;
 	Worker* workers_direct;
@@ -223,7 +217,7 @@ void test_vagtplan(const char* vagtplan_fil_navn) {
 	free(workers_direct);
 }
 
-void skab_vagtplan() {
+void create_schedule() {
 	FILE* fil = fopen("medarbejdere.csv", "r");
 	Worker* workers_direct;
 	unsigned int worker_count = 0;
@@ -262,7 +256,7 @@ void skab_vagtplan() {
 	free(workers_direct);
 }
 
-void print_vagtplaner(const char* vagtplan_fil_navn) {
+void print_schedules(const char* vagtplan_fil_navn) {
 	FILE* fil = fopen("medarbejdere.csv", "r");
 	RequiredWorkers required_workers;
 	Worker* workers_direct;
@@ -431,7 +425,7 @@ Schedule make_schedule(Worker* workers[], const unsigned int worker_count, const
 	for (i = 1; i < POPULATION_SIZE; i++) {
 		free_schedule(&population[i]);
 	}
-	/*Så kopier vi den første schedule inden vi deallokere den*/
+	/*Så kopier vi den første schedule inden vi deallokerer den*/
 	rv = population[0];
 	free(population);
 	return rv;
@@ -452,16 +446,16 @@ void generate_random_schedule(
 ) {
 	int day;
 
-	/*Foerste forloekke, repesentere de 7 dage i en uge.*/
+	/*Foerste forloekke, repræsenterer de 7 dage i en uge.*/
 	for (day = 0; day < 7; day++)
 	{
 		/*workers_top assignes til at have samme værdi som worker_count, dette er fordi vi skal gemme vaedien af worker_count.*/
 		unsigned int workers_top = worker_count;
 		int shift;
 
-		/*Denne forloekke repensentere de 3 vagter på en dag, dette vil sige denne funktionen goere 3*7 gange.*/
+		/*Denne forloekke repræsenterer de 3 vagter på en dag, dette vil sige denne funktionen goere 3*7 gange.*/
 		for (shift = 0; shift < 3; shift++) {
-			/*Her bliver der aflokeret plads til den maengde af medarbejder der skal bruges for den shift*/
+			/*Her bliver der aflokkeret plads til den maengde af medarbejder der skal bruges for den shift*/
 			int required_workers_for_shift = get_required_for_shift(required_workers, (enum Shift) shift);
 			unsigned int worker_index;
 			schedule->blocks[day * 3 + shift].workers = malloc(required_workers_for_shift * sizeof(struct Worker*));
@@ -479,7 +473,7 @@ void generate_random_schedule(
 					fatal_error("Ikke nok medarbejdere til at lave en valid plan for en dag");
 				}
 
-				/*Her indsaettes den tilfaeldige medarbejder ind i det nye skema.*/
+				/*Her indsaettes den tilfældige medarbejder ind i det nye skema.*/
 				schedule->blocks[day * 3 + shift].workers[worker_index] = workers[random_index];
 
 				/*Her bliver den arbejder der er blevet sat ind i skema'et til sidst i arrayet, samtidig bliver counteren workers_top, sat en ned.
@@ -548,13 +542,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 			for (worker_number = 0; worker_number < workers_needed; worker_number++) {
 				Worker* current_worker = current_worker_array[worker_number];
 				enum Day last_day;
-				enum Shift last_shift; 
-				
-				if (current_worker->last_block < 0){
-					last_shift = 3;
-				} else{
-					last_shift = current_worker->last_block % 3;
-				}
+
 				/* Alle workers starter med day_off sat til minus 1, så hvis en worker ikke er i skemaet er værdien -1
 				Hvis de er med i skemaet og ikke får et fridøgn er den lig 0 */
 				if (current_worker->day_off == -1){
@@ -565,59 +553,27 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				if (current_worker->last_block < 0){
 					last_day = DAY_INVALID;
 				} else{
-					current_worker->last_block / 3;
+					last_day = current_worker->last_block / 3;
 				}
 
 				/* Tjekker preferred shift */
 				if (current_worker->desired_shift == shift){
-					#ifdef DEBUG_FITNESS_FUNCTION
-						printf("+1 for at arbejde i preferred shift %s %s %s.%u\n", 
-							get_day_as_string(day), 
-							get_shift_as_string(shift), 
-							current_worker->name,
-							current_worker->uuid
-						);
-					#endif
 					schedule->score += 1;
 				} 
 
 				/*Tjekker 11 timers reglen*/
 				if(block_number - current_worker->last_block <= 2 && current_worker->last_block >= 0) {
 					schedule->score -= 1000;
-					#ifdef DEBUG_FITNESS_FUNCTION
-					printf("11 Timers regel ved %s %s %s.%u\n", 
-						get_day_as_string(day), 
-						get_shift_as_string(shift), 
-						current_worker->name,
-						current_worker->uuid
-					);	
-					#endif
 				}
 				/*Den opfylder ikke cyklisk hvis det er 1 dag siden man har arbejdet og 5 blokke siden, men hvis der er gået 2 dage så overholder den*/
 				if (day - last_day == 1 && block_number - current_worker->last_block == 5 && current_worker->last_block >= 0) {
 					schedule->score -= 1000;
-					#ifdef DEBUG_FITNESS_FUNCTION
-					printf("cyklisk brud ved %s %s %s.%u\n", 
-						get_day_as_string(day), 
-						get_shift_as_string(shift), 
-						current_worker->name,
-						current_worker->uuid
-					);
-					#endif
 				}
 				/* Tjekker nattevagter i streg*/
 				if (shift == SHIFT_NIGHT) {
 					if (current_worker->last_block == block_number - 3){
 						if (current_worker->consecutive_night_shifts >= 2){
 							schedule->score -= 1000;
-							#ifdef DEBUG_FITNESS_FUNCTION
-							printf("tjekker nattevagter i streg %s %s %s.%u\n", 
-								get_day_as_string(day), 
-								get_shift_as_string(shift), 
-								current_worker->name,
-								current_worker->uuid
-							);
-							#endif
 						}
 					} else {
 						current_worker->consecutive_night_shifts = 0;
@@ -628,7 +584,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 
 				/* Tjekker fridøgn, max af last_block og 0 fordi, hvis din første vagt er blok 6 har du haft et fridøgn */
-				if (block_number - max(current_worker->last_block, 0) > 5){
+				if (block_number - max(current_worker->last_block, 0) >= 5){
 					current_worker->day_off = 1;
 				}
 				
@@ -637,14 +593,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 
 				/*Tjek preferred day*/
 				if (current_worker->desired_day_off == day) {
-					#ifdef DEBUG_FITNESS_FUNCTION
-						printf("-2 for at arbejde på preferred day %s %s %s.%u\n", 
-							get_day_as_string(day), 
-							get_shift_as_string(shift), 
-							current_worker->name,
-							current_worker->uuid
-						);
-					#endif
 					schedule->score -= 2;
 				}
 			}
@@ -687,7 +635,6 @@ void combine_schedule(Worker* workers[], unsigned int worker_count, RequiredWork
 		}
 	}
 	if (rand() % 3 == 0) {
-		/*Det her skal renskrives*/
 		int random_block_index = random_number(0, 21);
 		int i;
 		int top = worker_count;
