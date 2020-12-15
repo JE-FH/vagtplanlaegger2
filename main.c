@@ -329,7 +329,7 @@ Worker* read_workers(FILE* fil, unsigned int* worker_count) {
 		);
 
 		if (res != 4) {
-			printf("Fejl i medarbejder liste på linje %lu og kolonne %d\n", *worker_count + 1, res);
+			printf("Fejl i medarbejder liste på linje %u og kolonne %d\n", *worker_count + 1, res);
 			fatal_error(NULL);
 		}
 
@@ -338,13 +338,13 @@ Worker* read_workers(FILE* fil, unsigned int* worker_count) {
 
 		workers[*worker_count].desired_day_off = string_to_day(day_text);
 		if (workers[*worker_count].desired_day_off == DAY_INVALID) {
-			printf("Fejl i medarbejder liste på linje %lu ved dag: %s er invalid\n", *worker_count + 1, shift_text);
+			printf("Fejl i medarbejder liste på linje %u ved dag: %s er invalid\n", *worker_count + 1, shift_text);
 			fatal_error(NULL);
 		}
 
 		workers[*worker_count].desired_shift = string_to_shift(shift_text);
 		if (workers[*worker_count].desired_shift == SHIFT_INVALID) {
-			printf("Fejl i medarbejder liste på linje %lu ved vagt: %s er invalid\n", *worker_count + 1, day_text);
+			printf("Fejl i medarbejder liste på linje %u ved vagt: %s er invalid\n", *worker_count + 1, day_text);
 			fatal_error(NULL);
 		}
 
@@ -725,7 +725,7 @@ Schedule read_schedule(FILE* file, RequiredWorkers* out, Worker** workers, unsig
 			set_required_for_shift(out, block_id % 3, workers_read);
 		} else {
 			if (amount_required != workers_read) {
-				printf("%u, %lu\n", amount_required, workers_read);
+				printf("%u, %u\n", amount_required, workers_read);
 				fatal_error("Forkert mængde medarbejdere sat");
 			}
 		}
