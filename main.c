@@ -568,7 +568,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 					last_day = DAY_INVALID;
 				}
 				else{
-					current_worker->last_block / 3;
+					last_day = current_worker->last_block / 3;
 				}
 
 				/* Tjekker preferred shift */
@@ -631,7 +631,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 
 				/* Tjekker fridøgn, max af last_block og 0 fordi, hvis din første vagt er blok 6 har du haft et fridøgn */
-				if (block_number - max(current_worker->last_block, 0) > 5){
+				if (block_number - max(current_worker->last_block, -1) > 5){
 					current_worker->day_off = 1;
 				}
 				/* Sætter last shift*/
@@ -657,6 +657,12 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 	for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
 		if (worker[worker_i]->day_off == 0) {
 			if (!(worker[worker_i]->last_block > 0 && 21 - worker[worker_i]->last_block > 5)) {
+				#ifdef DEBUG_FITNESS_FUNCTION
+				printf("-1000 for intet fridøgn %s.%u\n",
+					worker[worker_i]->name,
+					worker[worker_i]->uuid
+				);
+				#endif
 				schedule->score -= 1000;
 			}
 		}
@@ -850,12 +856,12 @@ void print_worker_schedule(FILE* file, const Worker* worker, const Schedule* sch
 	unsigned int day;
 	unsigned int shift;
 	fprintf(file,
-		"+---------------+--------+--------+--------+--------+--------+--------+--------+\n"
-		"|               | Mandag | Tirsdag| Onsdag | Torsdag| Fredag | Lørdag | Søndag |\n"
-		"+---------------+--------+--------+--------+--------+--------+--------+--------+\n"
+		"+-------------+-------+-------+-------+-------+-------+-------+-------+\n"
+		"|             |Mandag |Tirsdag|Onsdag |Torsdag|Fredag |Lørdag |Søndag |\n"
+		"+-------------+-------+-------+-------+-------+-------+-------+-------+\n"
 	);
 	for (shift = 0; shift < 3; shift++) {
-		fprintf(file, "| %s |", get_time_slot(shift));
+		fprintf(file, "|%s|", get_time_slot(shift));
 		for (day = 0; day < 7; day++) {
 			unsigned int worker_i;
 			unsigned int amount_of_workers = get_required_for_shift(required_workers, shift);
@@ -867,14 +873,14 @@ void print_worker_schedule(FILE* file, const Worker* worker, const Schedule* sch
 				}
 			}
 			if (found)  {
-				fprintf(file, " ###### |");
+				fprintf(file, "#######|");
 			} else {
-				fprintf(file, "        |");
+				fprintf(file, "       |");
 			}
 		}
 		fprintf(file, "\n");
 	}
-	fprintf(file, "+---------------+--------+--------+--------+--------+--------+--------+--------+\n");
+	fprintf(file, "+-------------+-------+-------+-------+-------+-------+-------+-------+\n");
 }
 
 const char* get_time_slot(enum Shift shift) {
