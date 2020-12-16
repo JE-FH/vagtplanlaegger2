@@ -1,5 +1,6 @@
 # Vagtplanlægger til hospitaler
 Denne readme vil forklare hvordan du bruger programmet og hvordan input data skal formateres.
+Vi går ud fra at du har installeret gcc så du kan kompilere c programmer.
 
 Lavet af: Gruppe A312a
 
@@ -18,12 +19,11 @@ Programmet har tre forskellige funktioner som er forklaret hver for sig
 
 
 ### Skab vagtplan
-Skab vagtplan bruger det genetiske algoritme til at skabe en vagtplan udfra en medarbejder liste. Den bruger altid filen `medarbejdere.csv` som input.
+Skab vagtplan bruger vores genetiske algoritme til at skabe en vagtplan udfra en medarbejder liste. Den bruger altid filen `medarbejdere.csv` som input.
 
-Derefter spørger programmet efter hvor mange medarbejdere medarbejdere der skal være på hver vagt.
+Derefter spørger programmet efter hvor mange medarbejdere der skal være på hver vagt.
 
-Denne funktion bruger ikke nogle programparameter, derfor så skal man bare kører exe 
-filen i kommandoprompten
+Denne funktion bruger ikke nogle programparametre, derfor skal man bare køre exe filen i kommandoprompten for denne funktionalitet.
 
 Efter vagtplanen er skabt, så bliver den gemt som `lavet-vagtplan.csv`
 
@@ -37,7 +37,7 @@ Udover dette, så tager den to program parametre, et kald ville se sådan her ud
 ```cmd
 vagtplanlaegger.exe test <filnavn på vagtplan>
 ```
-hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
+Hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
 
 
 ### Print vagtplan
@@ -49,7 +49,7 @@ Denne del tager også to programparametre, et kald ville se sådan her ud
 ```cmd
 vagtplanlaegger.exe print <filnavn på vagtplan>
 ```
-hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
+Hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
 
 De pæne vagtplaner bliver gemt inde under `output/`, derfor så skal man lave den mappe før man kører programmet.
 
@@ -65,10 +65,10 @@ Navn, Ønsket fridag, Ønsket vagt, UUID
 Et eksempel på en medarbejder liste er inkluderet i filen `medarbejdere.csv`. Den indeholder 10 medarbejdere. Hver medarbejder skal have et unikt UUID for at programmet kan fungere korrekt
 
 ### Lavet vagtplan format
-En lavet vagtplan består af 21 blokke, derfor så er en vagtplan også gemt som 21 rækker som hver repræsentere en blok. Hver linje i vagtplanen bliver formateret på følgende måde
+En lavet vagtplan består af 21 blokke, derfor så er en vagtplan også gemt som 21 rækker som hver repræsenterer en blok. Hver linje i vagtplanen bliver formateret på følgende måde
 ```
 Dag, Vagt, navn1.uuid1, navn2.uuid2, navn3.uuid3, ..., $
 ```
-dag og vagt bliver ignoreret af programmet, defor så skal blokkene komme i kronologisk rækkefølge
+Dag og Vagt bliver ignoreret af programmet, defor så skal blokkene komme i kronologisk rækkefølge
 
-et eksempel på sådan en fil kan findes i filen `vagtplan-eksempel.csv`. Den vagtplan virker kun med medarbejder listen `medarbejdere.csv` som der er gemt i forvejen.
+Et eksempel på sådan en fil kan findes i filen `vagtplan-eksempel.csv`. Den vagtplan virker kun med medarbejder listen `medarbejdere.csv` som der er gemt i forvejen.
