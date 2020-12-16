@@ -9,7 +9,6 @@
 #define POPULATION_SIZE 1000
 #define AMOUNT_OF_BEST_INDIVIDUALS 40
 #define AMOUNT_OF_CHILDREN 4
-#define max(a,b) (((a) > (b)) ? (a) : (b))
 
 enum Day {
 	DAY_MONDAY,
@@ -150,6 +149,8 @@ Worker* find_worker_from_uuid(Worker** workers, unsigned int worker_count, unsig
 RequiredWorkers input_required_workers();
 
 void free_schedule(Schedule* schedule);
+
+int maxi(int a, int b);
 
 const char* get_shift_as_string(enum Shift shift);
 const char* get_day_as_string(enum Day day);
@@ -584,7 +585,7 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 				}
 
 				/* Tjekker fridøgn, max af last_block og 0 fordi, hvis din første vagt er blok 6 har du haft et fridøgn */
-				if (block_number - max(current_worker->last_block, -1) > 5){
+				if (block_number - maxi(current_worker->last_block, -1) > 5){
 					current_worker->day_off = 1;
 				}
 				
@@ -876,4 +877,8 @@ void free_schedule(Schedule* schedule) {
 	for (i = 0; i < 21; i++) {
 		free(schedule->blocks[i].workers);
 	}
+}
+
+int maxi(int a, int b) {
+	return a > b ? a : b;
 }
