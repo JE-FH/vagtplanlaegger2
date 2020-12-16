@@ -603,12 +603,6 @@ double evaluate_schedule(Schedule* schedule, const RequiredWorkers required_work
 	for (worker_i = 0; worker_i < amount_of_workers; worker_i++) {
 		if (worker[worker_i]->day_off == 0) {
 			if (!(worker[worker_i]->last_block > 0 && 21 - worker[worker_i]->last_block > 5)) {
-				#ifdef DEBUG_FITNESS_FUNCTION
-				printf("-1000 for intet fridøgn %s.%u\n",
-					worker[worker_i]->name,
-					worker[worker_i]->uuid
-				);
-				#endif
 				schedule->score -= 1000;
 			}
 		}
