@@ -55,6 +55,8 @@ De pæne vagtplaner bliver gemt inde under `output/`, derfor så skal man lave d
 
 
 ## Format af input filerne
+Alle filer er gemt som CSV, vores program kan indlæse både komma og semikolon som separator, dog så gemme den alle filer med komma som separator.
+
 ### Medarbejder filen
 Denne fil skal være en CSV fil som beskriver hver medarbejder, den skal indeholde disse kolonner i samme rækkefølge
 
@@ -63,6 +65,8 @@ Navn, Ønsket fridag, Ønsket vagt, UUID
 ```
 
 Et eksempel på en medarbejder liste er inkluderet i filen `medarbejdere.csv`. Den indeholder 10 medarbejdere. Hver medarbejder skal have et unikt UUID for at programmet kan fungere korrekt
+
+Navne må desuden ikke være længere end 50 bogstaver.
 
 ### Lavet vagtplan format
 En lavet vagtplan består af 21 blokke, derfor så er en vagtplan også gemt som 21 rækker som hver repræsenterer en blok. Hver linje i vagtplanen bliver formateret på følgende måde
