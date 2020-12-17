@@ -497,7 +497,7 @@ unsigned int get_required_for_shift(RequiredWorkers required_workers, enum Shift
 	case SHIFT_EVENING:
 		return required_workers.evening_workers;
 	default:
-		fatal_error("program fejl");
+		fatal_error("Program fejl1337");
 	}
 	return 0;
 }
@@ -514,7 +514,7 @@ void set_required_for_shift(RequiredWorkers* required_workers, enum Shift shift,
 		required_workers->evening_workers = val;
 		break;
 	default:
-		fatal_error("program fejl");
+		fatal_error("Program fejl4");
 	}
 }
 
