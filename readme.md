@@ -55,7 +55,7 @@ De pæne vagtplaner bliver gemt inde under `output/`, derfor så skal man lave d
 
 
 ## Format af input filerne
-Alle filer er gemt som CSV, vores program kan indlæse både komma og semikolon som separator, dog så gemme den alle filer med komma som separator.
+Alle filer er gemt som CSV, vores program kan indlæse både komma og semikolon som separator, dog så gemmer programmet alle filer med komma som separator.
 
 ### Medarbejder filen
 Denne fil skal være en CSV fil som beskriver hver medarbejder, den skal indeholde disse kolonner i samme rækkefølge
