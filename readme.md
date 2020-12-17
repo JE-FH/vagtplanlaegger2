@@ -43,6 +43,8 @@ Hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
 ### Print vagtplan
 Denne funktion af programmet laver en pæn version af vagtplanen til hver medarbejder.
 
+De pæne vagtplaner bliver gemt inde under `output/`, derfor så skal man lave den mappe før man kører programmet.
+
 Denne funktion læser medarbejder listen fra filen `medarbejdere.csv`
 
 Denne del tager også to programparametre, et kald ville se sådan her ud
@@ -51,11 +53,9 @@ vagtplanlaegger.exe print <filnavn på vagtplan>
 ```
 Hvor <filnavn på vagtplan> er navnet på den vagtplan du vil teste
 
-De pæne vagtplaner bliver gemt inde under `output/`, derfor så skal man lave den mappe før man kører programmet.
-
 
 ## Format af input filerne
-Alle filer er gemt som CSV, vores program kan indlæse både komma og semikolon som separator, dog så gemme den alle filer med komma som separator.
+Alle filer er gemt som CSV, vores program kan indlæse både komma og semikolon som separator, dog så gemmer programmet alle filer med komma som separator.
 
 ### Medarbejder filen
 Denne fil skal være en CSV fil som beskriver hver medarbejder, den skal indeholde disse kolonner i samme rækkefølge
